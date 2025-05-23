@@ -59,8 +59,7 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
-import moment from "moment";
-import { motion } from "framer-motion";
+
 import { ButtonConfig } from "@/config/ButtonConfig";
 
 import {
@@ -70,34 +69,31 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import Page from "@/app/dashboard/page";
 
-const BrandList = () => {
+const RatioList = () => {
   const { toast } = useToast();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteWorkOrderId, setDeleteWorkOrderId] = useState(null);
 
-  const {
-    data: brand,
+  const { 
+    data: ratio,
     isLoading,
     isError,
     refetch,
   } = useQuery({
-    queryKey: ["brand"],
+    queryKey: ["ratio"],
     queryFn: async () => {
       const token = localStorage.getItem("token");
-      const response = await axios.get(
-        `${BASE_URL}/api/fetch-brand-list`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      return response.data.brand;
+      const response = await axios.get(`${BASE_URL}/api/fetch-ratio`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data.ratio;
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
       const token = localStorage.getItem("token");
-      return await axios.delete(`${BASE_URL}/api/delete-brand/${id}`, {
+      return await axios.delete(`${BASE_URL}/api/delete-ratio-by-id/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
     },
@@ -109,8 +105,22 @@ const BrandList = () => {
         description: `${response.data.msg}`,
       });
     },
+    onError: (error) => {
+      console.error("Delete failed:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete ratio. Please try again.",
+        variant: "destructive",
+      });
+    }
   });
-  const confirmDelete = () => {
+
+  const confirmDelete = (e) => {
+    e.preventDefault(); // Prevent any default behavior
+    e.stopPropagation(); // Stop event bubbling
+    
+    console.log("Confirm delete clicked, ID:", deleteWorkOrderId); // Debug log
+    
     if (deleteWorkOrderId) {
       deleteMutation.mutate(deleteWorkOrderId);
       setDeleteWorkOrderId(null);
@@ -127,66 +137,17 @@ const BrandList = () => {
   // Define columns for the table
   const columns = [
     {
-      accessorKey: "fabric_brand_images",
-      id: "Images",
-      header: "Images",
-      cell: ({ row }) => {
-        const imageUrl = row.getValue("Images")
-        ? `https://houseofonzone.com/admin/storage/app/public/Brands/${row.getValue("Images")}`
-        : "https://houseofonzone.com/admin/storage/app/public/no_image.jpg";
-        return (
-
-          <motion.img
-          src={imageUrl}
-          alt="Brand Img"
-          className="rounded-lg"
-          style={{ width: "40px", height: "40px", objectFit: "cover" }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          whileHover={{ scale: 1.1 }}
-        />
-        )
-      },
-    },
-    {
-      accessorKey: "fabric_brand_brands",
-      id: "Brand",
-      header: "Brand",
-      cell: ({ row }) => <div>{row.getValue("Brand")}</div>,
-    },
-
-
-    {
-      accessorKey: "fabric_brand_status",
-      id: "Status",
-      header: "Status",
-      cell: ({ row }) => {
-        const status = row.getValue("Status");
-
-        const statusColors = {
-          Active: "bg-green-100 text-green-800",
-          Inactive: "bg-red-100 text-red-800",
-        };
-
-        return (
-          <span
-            className={`px-2 py-1 rounded text-xs ${
-              statusColors[status] || "bg-gray-100 text-gray-800"
-            }`}
-          >
-            {status}
-          </span>
-        );
-      },
+      accessorKey: "ratio_range",
+      id: "Ratio",
+      header: "Ratio",
+      cell: ({ row }) => <div>{row.getValue("Ratio")}</div>,
     },
 
     {
       id: "actions",
-
       header: "Action",
       cell: ({ row }) => {
-        const workOrderId = row.original.id;
+        const workOrderId = row.original.ratio_range;
 
         return (
           <div className="flex flex-row">
@@ -214,6 +175,7 @@ const BrandList = () => {
                     variant="ghost"
                     size="icon"
                     onClick={() => {
+                      console.log("Delete clicked for ID:", workOrderId); // Debug log
                       setDeleteWorkOrderId(workOrderId);
                       setDeleteConfirmOpen(true);
                     }}
@@ -221,7 +183,7 @@ const BrandList = () => {
                     <Trash className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Delete Brand</TooltipContent>
+                <TooltipContent>Delete Ratio</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
@@ -232,7 +194,7 @@ const BrandList = () => {
 
   // Create the table instance
   const table = useReactTable({
-    data: brand || [],
+    data: ratio || [],
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -257,30 +219,28 @@ const BrandList = () => {
 
   // Render loading state
   if (isLoading) {
-    return <LoaderComponent name="Brand Data" />;
+    return <LoaderComponent name="Ratio Data" />;
   }
 
   // Render error state
   if (isError) {
     return (
-      <ErrorComponent
-        message="Error Fetching Brand  Data"
-        refetch={refetch}
-      />
+      <ErrorComponent message="Error Fetching Ratio  Data" refetch={refetch} />
     );
   }
+  
   return (
     <Page>
       <div className="w-full p-4">
         <div className="flex text-left text-2xl text-gray-800 font-[400]">
-          Brand List
+          Ratio List
         </div>
         {/* searching and column filter  */}
         <div className="flex items-center py-4">
           <div className="relative w-72">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
             <Input
-              placeholder="Search brand..."
+              placeholder="Search ratio..."
               value={table.getState().globalFilter || ""}
               onChange={(event) => table.setGlobalFilter(event.target.value)}
               className="pl-8 bg-gray-50 border-gray-200 focus:border-gray-300 focus:ring-gray-200"
@@ -377,7 +337,7 @@ const BrandList = () => {
         {/* row slection and pagintaion button  */}
         <div className="flex items-center justify-end space-x-2 py-4">
           <div className="flex-1 text-sm text-muted-foreground">
-            Total Brands : &nbsp;
+            Total Ratio : &nbsp;
             {table.getFilteredRowModel().rows.length}
           </div>
           <div className="space-x-2">
@@ -400,22 +360,31 @@ const BrandList = () => {
           </div>
         </div>
       </div>
+      
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the
-              brand.
+              ratio.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
-              className={`${ButtonConfig.backgroundColor}  ${ButtonConfig.textColor} text-black hover:bg-red-600`}
+              disabled={deleteMutation.isPending}
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
-              Delete
+              {deleteMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -424,4 +393,4 @@ const BrandList = () => {
   );
 };
 
-export default BrandList;
+export default RatioList;

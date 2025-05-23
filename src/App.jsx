@@ -16,6 +16,13 @@ import WorkOrderList from "./app/workOrder/WorkOrderList";
 import OrderReceivedList from "./app/orderReceived/OrderReceivedList";
 import SalesList from "./app/sales/SalesList";
 import FinishedStockList from "./app/finishedStock/FinishedStockList";
+import CreateWorkOrder from "./app/workOrder/CreateWorkOrder";
+import EditWorkOrder from "./app/workOrder/EditWorkOrder";
+import WorkOrderReceipt from "./app/workOrder/WorkOrderReceipt";
+import WorkOrderMaterial from "./app/workOrder/WorkOrderMaterial";
+
+
+
 
 
 function App() {
@@ -49,6 +56,11 @@ function App() {
       <Route path="/master/half-ratio" element={<HalfRatioList />} />
       {/* work order  */}
       <Route path="/work-order" element={<WorkOrderList />} />
+      <Route path="/work-order/create-work-order" element={<CreateWorkOrder />} />
+      <Route path="/work-order/edit-work-order/:id" element={<EditWorkOrder />} />
+
+      <Route path="/work-order/view-work-order/:id" element={<WorkOrderReceipt />} />
+      <Route path="/work-order/work-order-material/:id" element={<WorkOrderMaterial />} />
       {/* order received  */}
       <Route path="/order-received" element={<OrderReceivedList />} />
       {/* sales  */}
