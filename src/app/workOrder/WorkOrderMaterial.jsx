@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-
+import Page from "../dashboard/page";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import {
@@ -10,20 +10,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import {
-  ArrowUpDown,
-  ChevronDown,
-  Download,
-  Edit,
-  Eye,
-  Loader2,
-  Search,
-  SquareChevronRight,
-  SquarePlus,
-  Trash,
-  UserPen,
-  View,
-} from "lucide-react";
+import { ChevronDown, Search, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -40,12 +27,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 import BASE_URL from "@/config/BaseUrl";
 import {
@@ -58,61 +39,74 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { useNavigate } from "react-router-dom";
-import moment from "moment";
-import { motion } from "framer-motion";
-import { ButtonConfig } from "@/config/ButtonConfig";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
+import { ButtonConfig } from "@/config/ButtonConfig";
 import {
   ErrorComponent,
   LoaderComponent,
 } from "@/components/LoaderComponent/LoaderComponent";
 import { useToast } from "@/hooks/use-toast";
-import Page from "@/app/dashboard/page";
 
-const BrandList = () => {
+const WorkOrderMaterial = () => {
+  const { id } = useParams();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteWorkOrderId, setDeleteWorkOrderId] = useState(null);
+  const location = useLocation();
 
+  const { materialStatus } = location.state || {};
   const {
-    data: brand,
+    data: workorder,
     isLoading,
     isError,
     refetch,
   } = useQuery({
-    queryKey: ["brand"],
+    queryKey: ["workorder", id],
     queryFn: async () => {
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        `${BASE_URL}/api/fetch-brand-list`,
+        `${BASE_URL}/api/fetch-work-order-details-list-by-id/${id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      return response.data.brand;
+      return response.data.workorder;
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
+  const updateMutation = useMutation({
+    mutationFn: async (workOrderId) => {
       const token = localStorage.getItem("token");
-      return await axios.delete(`${BASE_URL}/api/delete-brand/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      return await axios.put(
+        `${BASE_URL}/api/update-work-order-finish-by-id/${workOrderId}`,
+        null,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
     },
     onSuccess: (response) => {
       refetch();
       setDeleteConfirmOpen(false);
       toast({
         title: "Success",
-        description: `${response.data.msg}`,
+        description: `${response?.data?.msg}`,
+      });
+      navigate("/work-order");
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Error closing work order",
       });
     },
   });
-  const confirmDelete = () => {
+
+  const confirmCloseWorkOrder = () => {
     if (deleteWorkOrderId) {
-      deleteMutation.mutate(deleteWorkOrderId);
+      updateMutation.mutate(deleteWorkOrderId);
       setDeleteWorkOrderId(null);
     }
   };
@@ -122,117 +116,44 @@ const BrandList = () => {
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});
   const [rowSelection, setRowSelection] = useState({});
-  const navigate = useNavigate();
 
   // Define columns for the table
   const columns = [
     {
-      accessorKey: "fabric_brand_images",
-      id: "Images",
-      header: "Images",
-      cell: ({ row }) => {
-        const imageUrl = row.getValue("Images")
-        ? `https://houseofonzone.com/admin/storage/app/public/Brands/${row.getValue("Images")}`
-        : "https://houseofonzone.com/admin/storage/app/public/no_image.jpg";
-        return (
-
-          <motion.img
-          src={imageUrl}
-          alt="Brand Img"
-          className="rounded-lg"
-          style={{ width: "40px", height: "40px", objectFit: "cover" }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          whileHover={{ scale: 1.1 }}
-        />
-        )
-      },
+      accessorKey: "finished_stock_tcode",
+      id: "Barcode",
+      header: "Barcode",
+      cell: ({ row }) => <div>{row.getValue("Barcode")}</div>,
     },
     {
-      accessorKey: "fabric_brand_brands",
-      id: "Brand",
-      header: "Brand",
-      cell: ({ row }) => <div>{row.getValue("Brand")}</div>,
+      accessorKey: "finished_stock_barcode",
+      id: "Article",
+      header: "Article",
+      cell: ({ row }) => <div>{row.getValue("Article")}</div>,
     },
-
-
     {
-      accessorKey: "fabric_brand_status",
-      id: "Status",
-      header: "Status",
-      cell: ({ row }) => {
-        const status = row.getValue("Status");
-
-        const statusColors = {
-          Active: "bg-green-100 text-green-800",
-          Inactive: "bg-red-100 text-red-800",
-        };
-
-        return (
-          <span
-            className={`px-2 py-1 rounded text-xs ${
-              statusColors[status] || "bg-gray-100 text-gray-800"
-            }`}
-          >
-            {status}
-          </span>
-        );
-      },
+      accessorKey: "finished_stock_total",
+      id: "Ordered",
+      header: "Ordered",
+      cell: ({ row }) => <div>{row.getValue("Ordered")}</div>,
     },
-
     {
-      id: "actions",
-
-      header: "Action",
-      cell: ({ row }) => {
-        const workOrderId = row.original.id;
-
-        return (
-          <div className="flex flex-row">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() =>
-                      navigate(`/work-order/edit-work-order/${workOrderId}`)
-                    }
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Edit Work Order</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      setDeleteWorkOrderId(workOrderId);
-                      setDeleteConfirmOpen(true);
-                    }}
-                  >
-                    <Trash className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Delete Brand</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        );
-      },
+      accessorKey: "total_receive",
+      id: "Received",
+      header: "Received",
+      cell: ({ row }) => <div>{row.getValue("Received")}</div>,
+    },
+    {
+      accessorKey: "finished_stock_total",
+      id: "Balance",
+      header: "Balance",
+      cell: ({ row }) => <div>{row.getValue("Balance")}</div>,
     },
   ];
 
   // Create the table instance
   const table = useReactTable({
-    data: brand || [],
+    data: workorder || [],
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -257,30 +178,31 @@ const BrandList = () => {
 
   // Render loading state
   if (isLoading) {
-    return <LoaderComponent name="Brand Data" />;
+    return <LoaderComponent name="Work Order Material List" />;
   }
 
   // Render error state
   if (isError) {
     return (
       <ErrorComponent
-        message="Error Fetching Brand  Data"
+        message="Error Fetching Work Order Material List"
         refetch={refetch}
       />
     );
   }
+
   return (
     <Page>
       <div className="w-full p-4">
         <div className="flex text-left text-2xl text-gray-800 font-[400]">
-          Brand List
+          Work Order
         </div>
         {/* searching and column filter  */}
         <div className="flex items-center py-4">
           <div className="relative w-72">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
             <Input
-              placeholder="Search brand..."
+              placeholder="Search work order..."
               value={table.getState().globalFilter || ""}
               onChange={(event) => table.setGlobalFilter(event.target.value)}
               className="pl-8 bg-gray-50 border-gray-200 focus:border-gray-300 focus:ring-gray-200"
@@ -296,29 +218,32 @@ const BrandList = () => {
               {table
                 .getAllColumns()
                 .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
+                .map((column) => (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
+                  >
+                    {column.id}
+                  </DropdownMenuCheckboxItem>
+                ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button
-            variant="default"
-            className={`ml-2 ${ButtonConfig.backgroundColor} ${ButtonConfig.hoverBackgroundColor} ${ButtonConfig.textColor}`}
-            onClick={() => navigate("/work-order/create-work-order")}
-          >
-            <SquarePlus className="h-4 w-4" /> Work Order
-          </Button>
+          {materialStatus !== "Received" && (
+            <Button
+              variant="default"
+              className={`ml-2 ${ButtonConfig.backgroundColor} ${ButtonConfig.hoverBackgroundColor} ${ButtonConfig.textColor}`}
+              onClick={() => {
+                setDeleteWorkOrderId(id);
+                setDeleteConfirmOpen(true);
+              }}
+            >
+              <Trash className="h-4 w-4" /> Close Work
+            </Button>
+          )}
         </div>
         {/* table  */}
         <div className="rounded-md border">
@@ -326,26 +251,24 @@ const BrandList = () => {
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
-                    return (
-                      <TableHead
-                        key={header.id}
-                        className={` ${ButtonConfig.tableHeader} ${ButtonConfig.tableLabel}`}
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    );
-                  })}
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      className={` ${ButtonConfig.tableHeader} ${ButtonConfig.tableLabel}`}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
+                  ))}
                 </TableRow>
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows?.length ? (
+              {table.getRowModel().rows.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
@@ -374,11 +297,10 @@ const BrandList = () => {
             </TableBody>
           </Table>
         </div>
-        {/* row slection and pagintaion button  */}
+        {/* row selection and pagination button */}
         <div className="flex items-center justify-end space-x-2 py-4">
           <div className="flex-1 text-sm text-muted-foreground">
-            Total Brands : &nbsp;
-            {table.getFilteredRowModel().rows.length}
+            Total Work Orders : &nbsp;{table.getFilteredRowModel().rows.length}
           </div>
           <div className="space-x-2">
             <Button
@@ -405,17 +327,19 @@ const BrandList = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              brand.
+              Are you sure you want to close this work order and mark all
+              materials as received?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setDeleteConfirmOpen(false)}>
+              No
+            </AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmDelete}
+              onClick={confirmCloseWorkOrder}
               className={`${ButtonConfig.backgroundColor}  ${ButtonConfig.textColor} text-black hover:bg-red-600`}
             >
-              Delete
+              Yes
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -424,4 +348,4 @@ const BrandList = () => {
   );
 };
 
-export default BrandList;
+export default WorkOrderMaterial;

@@ -254,3 +254,44 @@ export const useFetchDispatchDcNo = () => {
 
 //   return { data: query.data ?? [], prefetchNextContractNos };
 // };
+
+
+
+
+
+// onzone hooks 
+
+
+export const useFetchBrand = () => {
+  return useQuery(createQueryConfig(["brand"], "/api/fetch-brand"));
+};
+export const useFetchWidth = () => {
+  return useQuery(
+    createQueryConfig(["width"], "/api/fetch-width")
+  );
+};
+export const useFetchStyle = () => {
+  return useQuery(
+    createQueryConfig(["style"], "/api/fetch-style")
+  );
+};
+export const useFetchRatio = () => {
+  return useQuery(
+    createQueryConfig(["ratio"], "/api/fetch-ratio")
+  );
+};
+export const useFetchHalfRatio = () => {
+  return useQuery(
+    createQueryConfig(["half_ratio"], "/api/fetch-half-ratio")
+  );
+};
+export const useFetchFactory = () => {
+  return useQuery(
+    createQueryConfig(["factory"], "/api/fetch-factory")
+  );
+};
+export const useFetchCurrentYear = () => {
+  return useQuery(
+    createQueryConfig(["current_year"], "/api/fetch-year")
+  );
+};

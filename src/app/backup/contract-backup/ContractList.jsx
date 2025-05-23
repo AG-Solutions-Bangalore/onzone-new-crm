@@ -288,7 +288,7 @@ const ContractList = () => {
 
   // Render loading state
   if (isLoading) {
-    return <LoaderComponent name="Contract Data" />; // ✅ Correct prop usage
+    return <LoaderComponent name="Contract Data" />; 
   }
 
   // Render error state
