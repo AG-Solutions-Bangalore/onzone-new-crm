@@ -20,6 +20,14 @@ import CreateWorkOrder from "./app/workOrder/CreateWorkOrder";
 import EditWorkOrder from "./app/workOrder/EditWorkOrder";
 import WorkOrderReceipt from "./app/workOrder/WorkOrderReceipt";
 import WorkOrderMaterial from "./app/workOrder/WorkOrderMaterial";
+import EditBrand from "./app/master/brand/EditBrand";
+import AddHalfRatio from "./app/master/halfRatio/AddHalfRatio";
+import EditHalfRatio from "./app/master/halfRatio/EditHalfRatio";
+import ViewRatio from "./app/master/ratio/ViewRatio";
+import AddFactory from "./app/master/factory/AddFactory";
+import EditFactory from "./app/master/factory/EditFactory";
+import AddRetailer from "./app/master/retailer/AddRetailer";
+import EditRetailer from "./app/master/retailer/EditRetailer";
 
 
 
@@ -48,12 +56,38 @@ function App() {
         <Route path="/home" element={<Home />} />
       {/* Master  */}
       <Route path="/master/brand" element={<BrandList />} />
+      <Route path="/master/brand/edit-brand/:id" element={<EditBrand />} />
+
+
+
+
+
+
+
       <Route path="/master/factory" element={<FactoryList />} />
+      <Route path="/master/factory/add-factory" element={<AddFactory />} />
+      <Route path="/master/factory/edit-factory/:id" element={<EditFactory />} />
+
+
+
       <Route path="/master/style" element={<StyleList />} />
       <Route path="/master/width" element={<WidthList />} />
+
+
       <Route path="/master/retailer" element={<RetailerList />} />
+      <Route path="/master/retailer/add-retailer" element={<AddRetailer />} />
+      <Route path="/master/retailer/edit-retailer/:id" element={<EditRetailer />} />
+
+
+
       <Route path="/master/ratio" element={<RatioList />} />
+      <Route path="/master/ratio/view-ratio/:id" element={<ViewRatio />} />
+
+
       <Route path="/master/half-ratio" element={<HalfRatioList />} />
+      <Route path="/master/half-ratio/add-half-ratio" element={<AddHalfRatio />} />
+      <Route path="/master/half-ratio/edit-half-ratio/:id" element={<EditHalfRatio />} />
+
       {/* work order  */}
       <Route path="/work-order" element={<WorkOrderList />} />
       <Route path="/work-order/create-work-order" element={<CreateWorkOrder />} />
