@@ -180,13 +180,13 @@ const RetailerList = () => {
                     variant="ghost"
                     size="icon"
                     onClick={() =>
-                      navigate(`/work-order/edit-work-order/${workOrderId}`)
+                      navigate(`/master/retailer/edit-retailer/${workOrderId}`)
                     }
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Edit Work Order</TooltipContent>
+                <TooltipContent>Edit Retailer</TooltipContent>
               </Tooltip>
             </TooltipProvider>
 
@@ -281,9 +281,9 @@ const RetailerList = () => {
                  <Button
                    variant="default"
                    className={`ml-2 ${ButtonConfig.backgroundColor} ${ButtonConfig.hoverBackgroundColor} ${ButtonConfig.textColor}`}
-                   onClick={() => navigate("/work-order/create-work-order")}
+                   onClick={() => navigate("/master/retailer/add-retailer")}
                  >
-                   <SquarePlus className="h-4 w-4" /> Work Order
+                   <SquarePlus className="h-4 w-4" /> Retailer
                  </Button>
                </div>
                {/* table  */}

@@ -209,13 +209,13 @@ const FactoryList = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() =>
-                          navigate(`/work-order/edit-work-order/${workOrderId}`)
+                          navigate(`/master/factory/edit-factory/${workOrderId}`)
                         }
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Edit Work Order</TooltipContent>
+                    <TooltipContent>Edit Factory</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
     
@@ -327,9 +327,9 @@ const FactoryList = () => {
              <Button
                variant="default"
                className={`ml-2 ${ButtonConfig.backgroundColor} ${ButtonConfig.hoverBackgroundColor} ${ButtonConfig.textColor}`}
-               onClick={() => navigate("/work-order/create-work-order")}
+               onClick={() => navigate("/master/factory/add-factory")}
              >
-               <SquarePlus className="h-4 w-4" /> Work Order
+               <SquarePlus className="h-4 w-4" /> Factory
              </Button>
            </div>
            {/* table  */}

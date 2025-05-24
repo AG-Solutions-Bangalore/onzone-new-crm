@@ -177,7 +177,7 @@ const HalfRatioList = () => {
     
           header: "Action",
           cell: ({ row }) => {
-            const workOrderId = row.original.id;
+            const halfRatioId = row.original.id;
     
             return (
               <div className="flex flex-row">
@@ -188,13 +188,13 @@ const HalfRatioList = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() =>
-                          navigate(`/work-order/edit-work-order/${workOrderId}`)
+                          navigate(`/master/half-ratio/edit-half-ratio/${halfRatioId}`)
                         }
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Edit Work Order</TooltipContent>
+                    <TooltipContent>Edit Half-Ratio</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
     
@@ -205,7 +205,7 @@ const HalfRatioList = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => {
-                          setDeleteWorkOrderId(workOrderId);
+                          setDeleteWorkOrderId(halfRatioId);
                           setDeleteConfirmOpen(true);
                         }}
                       >
@@ -306,9 +306,9 @@ const HalfRatioList = () => {
               <Button
                 variant="default"
                 className={`ml-2 ${ButtonConfig.backgroundColor} ${ButtonConfig.hoverBackgroundColor} ${ButtonConfig.textColor}`}
-                onClick={() => navigate("/work-order/create-work-order")}
+                onClick={() => navigate("/master/half-ratio/add-half-ratio")}
               >
-                <SquarePlus className="h-4 w-4" /> Work Order
+                <SquarePlus className="h-4 w-4" /> Half-Ratio
               </Button>
             </div>
             {/* table  */}

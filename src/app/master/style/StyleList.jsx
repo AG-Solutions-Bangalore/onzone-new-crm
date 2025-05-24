@@ -68,6 +68,8 @@ import {
 } from "@/components/LoaderComponent/LoaderComponent";
 import { useToast } from "@/hooks/use-toast";
 import Page from "@/app/dashboard/page";
+import AddStyle from "./AddStyle";
+import EditStyle from "./EditStyle";
 
 const StyleList = () => {
    const { toast } = useToast();
@@ -167,22 +169,7 @@ const StyleList = () => {
   
           return (
             <div className="flex flex-row">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() =>
-                        navigate(`/work-order/edit-work-order/${workOrderId}`)
-                      }
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Edit Work Order</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <EditStyle styleId={workOrderId}/>
   
               <TooltipProvider>
                 <Tooltip>
@@ -289,13 +276,7 @@ const StyleList = () => {
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button
-            variant="default"
-            className={`ml-2 ${ButtonConfig.backgroundColor} ${ButtonConfig.hoverBackgroundColor} ${ButtonConfig.textColor}`}
-            onClick={() => navigate("/work-order/create-work-order")}
-          >
-            <SquarePlus className="h-4 w-4" /> Work Order
-          </Button>
+         <AddStyle/>
         </div>
         {/* table  */}
         <div className="rounded-md border">

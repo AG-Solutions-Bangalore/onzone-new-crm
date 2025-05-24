@@ -23,6 +23,8 @@ import {
   Trash,
   UserPen,
   View,
+  Check,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +48,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import BASE_URL from "@/config/BaseUrl";
 import {
@@ -74,6 +83,15 @@ const BrandList = () => {
   const { toast } = useToast();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteWorkOrderId, setDeleteWorkOrderId] = useState(null);
+  const [editingRow, setEditingRow] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const statusOptions = [
+    { value: "Active", label: "Active" },
+    { value: "Inactive", label: "Inactive" },
+  ];
 
   const {
     data: brand,
@@ -110,11 +128,111 @@ const BrandList = () => {
       });
     },
   });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }) => {
+      const token = localStorage.getItem("token");
+      return await axios({
+        url: `${BASE_URL}/api/update-brand/${id}?_method=PUT`,
+        method: "POST",
+        data,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    },
+    onSuccess: (response) => {
+      refetch();
+      setEditingRow(null);
+      setEditFormData({});
+      setSelectedFile(null);
+      toast({
+        title: "Success",
+        description: "Brand updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to update brand",
+        variant: "destructive",
+      });
+    },
+  });
+
   const confirmDelete = () => {
     if (deleteWorkOrderId) {
       deleteMutation.mutate(deleteWorkOrderId);
       setDeleteWorkOrderId(null);
     }
+  };
+
+  const validateOnlyText = (inputtxt) => {
+    var re = /^[A-Za-z ]+$/;
+    if (inputtxt === "" || re.test(inputtxt)) {
+      return true;
+    } else {
+      return false;
+    }
+  };
+
+  const handleEditClick = (row) => {
+    setEditingRow(row.original.id);
+    setEditFormData({
+      fabric_brand_brands: row.original.fabric_brand_brands,
+      fabric_brand_status: row.original.fabric_brand_status,
+      fabric_brand_images: row.original.fabric_brand_images,
+    });
+    setSelectedFile(null);
+  };
+
+  const handleCancelEdit = () => {
+  
+  if (selectedFile) {
+    URL.revokeObjectURL(URL.createObjectURL(selectedFile));
+  }
+  setEditingRow(null);
+  setEditFormData({});
+  setSelectedFile(null);
+};
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    if (name === "fabric_brand_brands") {
+      if (validateOnlyText(value)) {
+        setEditFormData({
+          ...editFormData,
+          [name]: value,
+        });
+      }
+    } else {
+      setEditFormData({
+        ...editFormData,
+        [name]: value,
+      });
+    }
+  };
+
+  const handleSelectChange = (value) => {
+    setEditFormData({
+      ...editFormData,
+      fabric_brand_status: value,
+    });
+  };
+
+  const handleFileChange = (e) => {
+    setSelectedFile(e.target.files[0]);
+  };
+
+  const handleUpdateSubmit = (id) => {
+    const data = new FormData();
+    data.append("fabric_brand_brands", editFormData.fabric_brand_brands);
+    data.append("fabric_brand_status", editFormData.fabric_brand_status);
+    if (selectedFile) {
+      data.append("fabric_brand_images", selectedFile);
+    }
+
+    updateMutation.mutate({ id, data });
   };
 
   // State for table management
@@ -131,38 +249,134 @@ const BrandList = () => {
       id: "Images",
       header: "Images",
       cell: ({ row }) => {
-        const imageUrl = row.getValue("Images")
-        ? `https://houseofonzone.com/admin/storage/app/public/Brands/${row.getValue("Images")}`
-        : "https://houseofonzone.com/admin/storage/app/public/no_image.jpg";
-        return (
+  const isEditing = editingRow === row.original.id;
+  const imageUrl = row.getValue("Images")
+    ? `https://houseofonzone.com/admin/storage/app/public/Brands/${row.getValue("Images")}`
+    : "https://houseofonzone.com/admin/storage/app/public/no_image.jpg";
 
-          <motion.img
-          src={imageUrl}
-          alt="Brand Img"
-          className="rounded-lg"
-          style={{ width: "40px", height: "40px", objectFit: "cover" }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          whileHover={{ scale: 1.1 }}
-        />
-        )
-      },
+  if (isEditing) {
+    return (
+      <motion.div 
+        className="relative group"
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+      >
+        <div className="flex items-center space-x-3">
+          {/* Current Image */}
+          <div className="relative">
+            <motion.img
+              src={imageUrl}
+              alt="Current Brand Img"
+              className="rounded-xl border-2 border-blue-200 shadow-lg"
+              style={{ width: "50px", height: "50px", objectFit: "cover" }}
+              whileHover={{ scale: 1.05 }}
+              transition={{ duration: 0.2 }}
+            />
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-purple-400 rounded-xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
+            <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 bg-white px-1 rounded">Current</span>
+          </div>
+          
+          {/* Preview of Selected Image */}
+          {selectedFile && (
+            <div className="relative">
+              <motion.img
+                src={URL.createObjectURL(selectedFile)}
+                alt="Selected Brand Img"
+                className="rounded-xl border-2 border-green-200 shadow-lg"
+                style={{ width: "50px", height: "50px", objectFit: "cover" }}
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                whileHover={{ scale: 1.05 }}
+              />
+              <div className="absolute -inset-1 bg-gradient-to-r from-green-400 to-blue-400 rounded-xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
+              <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-green-600 bg-white px-1 rounded">New</span>
+            </div>
+          )}
+        </div>
+        
+        <div className="mt-2">
+          <label className="relative cursor-pointer">
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <div className="flex items-center justify-center px-3 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105">
+              <span>{selectedFile ? 'Change' : 'Choose'}</span>
+            </div>
+          </label>
+        </div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.img
+      src={imageUrl}
+      alt="Brand Img"
+      className="rounded-lg"
+      style={{ width: "40px", height: "40px", objectFit: "cover" }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      whileHover={{ scale: 1.1 }}
+    />
+  );
+},
     },
     {
       accessorKey: "fabric_brand_brands",
       id: "Brand",
       header: "Brand",
-      cell: ({ row }) => <div>{row.getValue("Brand")}</div>,
+      cell: ({ row }) => {
+        const isEditing = editingRow === row.original.id;
+
+        if (isEditing) {
+          return (
+            <Input
+              type="text"
+              value={editFormData.fabric_brand_brands || ""}
+              onChange={handleInputChange}
+              name="fabric_brand_brands"
+              className="w-full"
+              required
+            />
+          );
+        }
+
+        return <div>{row.getValue("Brand")}</div>;
+      },
     },
-
-
     {
       accessorKey: "fabric_brand_status",
       id: "Status",
       header: "Status",
       cell: ({ row }) => {
+        const isEditing = editingRow === row.original.id;
         const status = row.getValue("Status");
+
+        if (isEditing) {
+          return (
+            <Select
+              value={editFormData.fabric_brand_status || ""}
+              onValueChange={handleSelectChange}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          );
+        }
 
         const statusColors = {
           Active: "bg-green-100 text-green-800",
@@ -180,13 +394,58 @@ const BrandList = () => {
         );
       },
     },
-
     {
       id: "actions",
-
       header: "Action",
       cell: ({ row }) => {
-        const workOrderId = row.original.id;
+        const brandId = row.original.id;
+        const isEditing = editingRow === brandId;
+
+        if (isEditing) {
+          return (
+            <div className="flex flex-row space-x-1">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleUpdateSubmit(brandId)}
+                      disabled={updateMutation.isPending}
+                      className="text-green-600 hover:text-green-800"
+                    >
+                      {updateMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {updateMutation.isPending ? "Updating..." : "Save Changes"}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleCancelEdit}
+                      disabled={updateMutation.isPending}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Cancel</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          );
+        }
 
         return (
           <div className="flex flex-row">
@@ -196,14 +455,12 @@ const BrandList = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() =>
-                      navigate(`/work-order/edit-work-order/${workOrderId}`)
-                    }
+                    onClick={() => handleEditClick(row)}
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Edit Work Order</TooltipContent>
+                <TooltipContent>Edit Brand</TooltipContent>
               </Tooltip>
             </TooltipProvider>
 
@@ -214,7 +471,7 @@ const BrandList = () => {
                     variant="ghost"
                     size="icon"
                     onClick={() => {
-                      setDeleteWorkOrderId(workOrderId);
+                      setDeleteWorkOrderId(brandId);
                       setDeleteConfirmOpen(true);
                     }}
                   >
@@ -264,18 +521,19 @@ const BrandList = () => {
   if (isError) {
     return (
       <ErrorComponent
-        message="Error Fetching Brand  Data"
+        message="Error Fetching Brand Data"
         refetch={refetch}
       />
     );
   }
+
   return (
     <Page>
       <div className="w-full p-4">
         <div className="flex text-left text-2xl text-gray-800 font-[400]">
           Brand List
         </div>
-        {/* searching and column filter  */}
+        {/* searching and column filter */}
         <div className="flex items-center py-4">
           <div className="relative w-72">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
@@ -312,15 +570,8 @@ const BrandList = () => {
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button
-            variant="default"
-            className={`ml-2 ${ButtonConfig.backgroundColor} ${ButtonConfig.hoverBackgroundColor} ${ButtonConfig.textColor}`}
-            onClick={() => navigate("/work-order/create-work-order")}
-          >
-            <SquarePlus className="h-4 w-4" /> Work Order
-          </Button>
         </div>
-        {/* table  */}
+        {/* table */}
         <div className="rounded-md border">
           <Table>
             <TableHeader>
@@ -350,6 +601,7 @@ const BrandList = () => {
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
+                    className={editingRow === row.original.id ? "bg-blue-50" : ""}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
@@ -374,7 +626,7 @@ const BrandList = () => {
             </TableBody>
           </Table>
         </div>
-        {/* row slection and pagintaion button  */}
+        {/* row selection and pagination button */}
         <div className="flex items-center justify-end space-x-2 py-4">
           <div className="flex-1 text-sm text-muted-foreground">
             Total Brands : &nbsp;
@@ -413,7 +665,7 @@ const BrandList = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
-              className={`${ButtonConfig.backgroundColor}  ${ButtonConfig.textColor} text-black hover:bg-red-600`}
+              className={`${ButtonConfig.backgroundColor} ${ButtonConfig.textColor} text-black hover:bg-red-600`}
             >
               Delete
             </AlertDialogAction>

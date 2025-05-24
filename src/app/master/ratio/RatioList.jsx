@@ -68,6 +68,7 @@ import {
 } from "@/components/LoaderComponent/LoaderComponent";
 import { useToast } from "@/hooks/use-toast";
 import Page from "@/app/dashboard/page";
+import AddRatio from "./AddRatio";
 
 const RatioList = () => {
   const { toast } = useToast();
@@ -134,7 +135,7 @@ const RatioList = () => {
 
       header: "Action",
       cell: ({ row }) => {
-        const workOrderId = row.original.id;
+        const workOrderId = row.original.ratio_range;
 
         return (
           <div className="flex flex-row">
@@ -145,13 +146,13 @@ const RatioList = () => {
                     variant="ghost"
                     size="icon"
                     onClick={() =>
-                      navigate(`/work-order/edit-work-order/${workOrderId}`)
+                      navigate(`/master/ratio/view-ratio/${workOrderId}`)
                     }
                   >
-                    <Edit className="h-4 w-4" />
+                    <Eye className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Edit Work Order</TooltipContent>
+                <TooltipContent>View Ratio</TooltipContent>
               </Tooltip>
             </TooltipProvider>
 
@@ -257,13 +258,7 @@ const RatioList = () => {
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button
-            variant="default"
-            className={`ml-2 ${ButtonConfig.backgroundColor} ${ButtonConfig.hoverBackgroundColor} ${ButtonConfig.textColor}`}
-            onClick={() => navigate("/work-order/create-work-order")}
-          >
-            <SquarePlus className="h-4 w-4" /> Work Order
-          </Button>
+         <AddRatio/>
         </div>
         {/* table  */}
         <div className="rounded-md border">
