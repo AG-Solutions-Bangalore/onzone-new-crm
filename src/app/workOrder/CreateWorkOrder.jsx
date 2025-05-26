@@ -279,14 +279,14 @@ const CreateWorkOrder = () => {
       if (data?.code === 200) {
         toast({
           title: "Success",
-          description: "Work order created successfully",
+          description: `${data.msg}`,
         });
         navigate("/work-order");
       } else {
         toast({
           variant: "destructive",
           title: "Error",
-          description: data?.message,
+          description: data?.msg,
         });
       }
     },
@@ -295,7 +295,7 @@ const CreateWorkOrder = () => {
         variant: "destructive",
         title: "Error",
         description:
-          error.response?.data?.message ||
+          error.response?.data?.msg ||
           "Submission failed. Please try again.",
       });
     },

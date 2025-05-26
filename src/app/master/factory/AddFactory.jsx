@@ -66,12 +66,12 @@ const AddFactory = () => {
       if (data.code === 200) {
         toast({
           title: "Success",
-          description: "Factory created successfully",
+          description: `${data.msg}`,
         });
         resetForm();
         navigate("/master/factory");
       } else {
-        throw new Error(data.message || "Duplicate Entry");
+        throw new Error(data.msg || "Duplicate Entry");
       }
     },
     onError: (error) => {

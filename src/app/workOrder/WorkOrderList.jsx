@@ -98,16 +98,16 @@ const WorkOrderList = () => {
     const deleteMutation = useMutation({
       mutationFn: async (id) => {
         const token = localStorage.getItem("token");
-        await axios.delete(`${BASE_URL}/api/delete-half-work-order/${id}`, {
+        return await axios.delete(`${BASE_URL}/api/delete-half-work-order/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
       },
-      onSuccess: () => {
+      onSuccess: (response) => {
         refetch();
         setDeleteConfirmOpen(false);
         toast({
           title: "Success",
-          description: "Work Order deleted successfully",
+          description: `${response.data.msg}`,
         });
       },
     });

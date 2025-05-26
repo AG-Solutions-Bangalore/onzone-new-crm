@@ -83,7 +83,7 @@ const AddHalfRatio = () => {
       if (data.code === 200) {
         toast({
           title: "Success",
-          description: "Half Ratio created successfully",
+          description: `${data.msg}`,
         });
         resetForm();
         navigate("/master/half-ratio");
@@ -95,7 +95,7 @@ const AddHalfRatio = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: error.msg,
       });
     },
   });

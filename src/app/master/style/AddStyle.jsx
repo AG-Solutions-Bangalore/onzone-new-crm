@@ -89,7 +89,7 @@ const AddStyle = () => {
                <SquarePlus className="h-4 w-4 " /> Style
              </Button>
             
-           ) : pathname === "/master/style" ? (
+           ) : pathname === "/master/style-new" ? (
              <p className="text-xs text-yellow-700 ml-2 mt-1 w-32 hover:text-red-800 cursor-pointer">
                Create Style
              </p>

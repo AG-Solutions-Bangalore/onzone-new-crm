@@ -110,7 +110,7 @@ const EditFactory = () => {
       if (data.code === 200) {
         toast({
           title: "Success",
-          description: "Factory updated successfully",
+          description: `${data.msg}`,
         })
         navigate("/master/factory")
       } else {
@@ -121,7 +121,7 @@ const EditFactory = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message.includes("duplicate") 
+        description: error.msg.includes("duplicate") 
           ? "Duplicate entry found" 
           : "Failed to update factory",
       })

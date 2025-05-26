@@ -28,6 +28,10 @@ import AddFactory from "./app/master/factory/AddFactory";
 import EditFactory from "./app/master/factory/EditFactory";
 import AddRetailer from "./app/master/retailer/AddRetailer";
 import EditRetailer from "./app/master/retailer/EditRetailer";
+import AddOrderReceived from "./app/orderReceived/AddOrderReceived";
+import EditOrderReceived from "./app/orderReceived/EditOrderReceived";
+import ViewOrderReceived from "./app/orderReceived/ViewOrderReceived";
+import DcReceiptReceived from "./app/orderReceived/DcReceiptReceived";
 
 
 
@@ -97,6 +101,10 @@ function App() {
       <Route path="/work-order/work-order-material/:id" element={<WorkOrderMaterial />} />
       {/* order received  */}
       <Route path="/order-received" element={<OrderReceivedList />} />
+      <Route path="/order-received/add-order-received" element={<AddOrderReceived />} />
+      <Route path="/order-received/edit-order-received/:id" element={<EditOrderReceived />} />
+      <Route path="/order-received/view-order-received/:id" element={<ViewOrderReceived />} />
+      <Route path="/order-received/dc-receipt/:id" element={<DcReceiptReceived />} />
       {/* sales  */}
       <Route path="/sales" element={<SalesList />} />
       {/* finished stock  */}

@@ -360,14 +360,14 @@ const EditWorkOrder = () => {
       if (data?.code === 200) {
         toast({
           title: "Success",
-          description: "Work order updated successfully",
+          description: `${data.msg}`,
         });
         navigate("/work-order");
       } else {
         toast({
           variant: "destructive",
           title: "Error",
-          description: data?.message,
+          description: data?.msg,
         });
       }
     },
@@ -376,7 +376,7 @@ const EditWorkOrder = () => {
         variant: "destructive",
         title: "Error",
         description:
-          error.response?.data?.message || "Update failed. Please try again.",
+          error.response?.data?.msg || "Update failed. Please try again.",
       });
     },
   });

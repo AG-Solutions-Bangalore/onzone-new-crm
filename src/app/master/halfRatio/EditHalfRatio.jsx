@@ -128,11 +128,11 @@ const EditHalfRatio = () => {
       if (data.code === 200) {
         toast({
           title: "Success",
-          description: "Ratio updated successfully",
+          description: `${data.msg}`,
         })
         navigate("/master/half-ratio")
       } else {
-        throw new Error(data.message || "Update failed")
+        throw new Error(data.msg || "Update failed")
       }
     },
     onError: (error) => {

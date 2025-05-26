@@ -41,7 +41,7 @@ const EditStyle = ({styleId}) => {
       });
       const [originalData, setOriginalData] = useState(null);
     
-      // Fetch style data
+     
       const fetchStyleData = async () => {
         setIsFetching(true);
         try {
@@ -79,7 +79,7 @@ const EditStyle = ({styleId}) => {
         }
       }, [open]);
     
-      // Handle form submission
+     
       const handleSubmit = async () => {
         if (!formData.style_type.trim()) {
           toast({
@@ -101,10 +101,10 @@ const EditStyle = ({styleId}) => {
             }
           );
     
-          if (response?.data.code == "200") {
+          if (response?.data.code === 200) {
             toast({
               title: "Success",
-              description: "Style updated successfully"
+              description: `${response.data.msg}`
             });
       
             await queryClient.invalidateQueries(["style"]);
@@ -112,7 +112,7 @@ const EditStyle = ({styleId}) => {
           } else {
             toast({
               title: "Error",
-              description: response.data.message || "Failed to update style",
+              description: response.data.msg || "Failed to update style",
               variant: "destructive",
             });
           }
@@ -120,7 +120,7 @@ const EditStyle = ({styleId}) => {
           toast({
             title: "Error",
             description:
-              error.response?.data?.message || "Failed to update style",
+              error.response?.data?.msg || "Failed to update style",
             variant: "destructive",
           });
         } finally {
@@ -128,7 +128,7 @@ const EditStyle = ({styleId}) => {
         }
       };
     
-      // Check if there are changes
+   
       const hasChanges =
         originalData &&
         (formData.style_type !== originalData.style_type ||
