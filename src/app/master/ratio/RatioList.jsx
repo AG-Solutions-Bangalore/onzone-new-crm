@@ -94,7 +94,7 @@ const RatioList = () => {
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
       const token = localStorage.getItem("token");
-      return await axios.delete(`${BASE_URL}/api/delete-ratio-by-id/${id}`, {
+      return await axios.post(`${BASE_URL}/api/delete-ratio-by-id/${id}`,{}, {
         headers: { Authorization: `Bearer ${token}` },
       });
     },

@@ -78,6 +78,7 @@ import {
 } from "@/components/LoaderComponent/LoaderComponent";
 import { useToast } from "@/hooks/use-toast";
 import Page from "@/app/dashboard/page";
+import AddBrand from "./AddBrand";
 
 const BrandList = () => {
   const { toast } = useToast();
@@ -127,6 +128,13 @@ const BrandList = () => {
         description: `${response.data.msg}`,
       });
     },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `${error.response?.data?.message}`,
+        variant: "destructive",
+      });
+    }
   });
 
   const updateMutation = useMutation({
@@ -148,7 +156,7 @@ const BrandList = () => {
       setSelectedFile(null);
       toast({
         title: "Success",
-        description: "Brand updated successfully",
+        description: `${response.data.msg}`,
       });
     },
     onError: (error) => {
@@ -160,10 +168,20 @@ const BrandList = () => {
     },
   });
 
-  const confirmDelete = () => {
-    if (deleteWorkOrderId) {
+  // const confirmDelete = (e) => {
+  //   e.preventDefault();
+  //   e.stopPropagation()
+  //   if (deleteWorkOrderId) {
+  //     deleteMutation.mutate(deleteWorkOrderId);
+  //     setDeleteWorkOrderId(null);
+  //   }
+  // };
+
+  const confirmDelete = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (deleteWorkOrderId && !deleteMutation.isPending) {
       deleteMutation.mutate(deleteWorkOrderId);
-      setDeleteWorkOrderId(null);
     }
   };
 
@@ -249,48 +267,42 @@ const BrandList = () => {
       id: "Images",
       header: "Images",
       cell: ({ row }) => {
-  const isEditing = editingRow === row.original.id;
-  const imageUrl = row.getValue("Images")
-    ? `https://houseofonzone.com/admin/storage/app/public/Brands/${row.getValue("Images")}`
+  const isEditing = editingRow == row.original.id;
+  const imageUrl = row.original.fabric_brand_images
+    ? ` https://agsrb.online/oztestapi/storage/app/public/Brands/${row.original.fabric_brand_images}`
     : "https://houseofonzone.com/admin/storage/app/public/no_image.jpg";
 
   if (isEditing) {
     return (
-      <motion.div 
+      <div 
         className="relative group"
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
+     
       >
         <div className="flex items-center space-x-3">
-          {/* Current Image */}
+         
           <div className="relative">
-            <motion.img
+            <img
               src={imageUrl}
               alt="Current Brand Img"
               className="rounded-xl border-2 border-blue-200 shadow-lg"
               style={{ width: "50px", height: "50px", objectFit: "cover" }}
-              whileHover={{ scale: 1.05 }}
-              transition={{ duration: 0.2 }}
+             
             />
-            <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-purple-400 rounded-xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
+            <div className="absolute -inset-1  rounded-xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
             <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 bg-white px-1 rounded">Current</span>
           </div>
           
-          {/* Preview of Selected Image */}
+          
           {selectedFile && (
             <div className="relative">
-              <motion.img
+              <img
                 src={URL.createObjectURL(selectedFile)}
                 alt="Selected Brand Img"
                 className="rounded-xl border-2 border-green-200 shadow-lg"
                 style={{ width: "50px", height: "50px", objectFit: "cover" }}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.3 }}
-                whileHover={{ scale: 1.05 }}
+               
               />
-              <div className="absolute -inset-1 bg-gradient-to-r from-green-400 to-blue-400 rounded-xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
+              <div className="absolute -inset-1  rounded-xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
               <span className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-green-600 bg-white px-1 rounded">New</span>
             </div>
           )}
@@ -309,20 +321,17 @@ const BrandList = () => {
             </div>
           </label>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
   return (
-    <motion.img
+    <img
       src={imageUrl}
       alt="Brand Img"
       className="rounded-lg"
       style={{ width: "40px", height: "40px", objectFit: "cover" }}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      whileHover={{ scale: 1.1 }}
+     
     />
   );
 },
@@ -570,6 +579,7 @@ const BrandList = () => {
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
+          <AddBrand/>
         </div>
         {/* table */}
         <div className="rounded-md border">
@@ -666,8 +676,30 @@ const BrandList = () => {
             <AlertDialogAction
               onClick={confirmDelete}
               className={`${ButtonConfig.backgroundColor} ${ButtonConfig.textColor} text-black hover:bg-red-600`}
+              disabled={deleteMutation.isPending}
             >
-              Delete
+            {deleteMutation.isPending ? (
+          <div className="flex items-center gap-2">
+            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            Processing...
+          </div>
+        ) : (
+          "Delete"
+        )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

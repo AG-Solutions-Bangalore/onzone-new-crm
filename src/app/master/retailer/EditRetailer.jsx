@@ -122,7 +122,7 @@ const EditRetailer = () => {
       if (data.code === 200 ) {
         toast({
           title: "Success",
-          description: "Retailer updated successfully",
+          description: `${data.msg}`,
         })
         navigate("/master/retailer")
       } else {
@@ -133,7 +133,7 @@ const EditRetailer = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message.includes("Duplicate") 
+        description: error.msg.includes("Duplicate") 
           ? "Duplicate entry found" 
           : "Failed to update retailer",
       })

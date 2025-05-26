@@ -75,19 +75,19 @@ const AddRetailer = () => {
       if (data.code === 200) {
         toast({
           title: "Success",
-          description: "Retailer created successfully",
+          description: `${data.msg}`,
         });
         resetForm();
         navigate("/master/retailer");
       } else {
-        throw new Error(data.message || "Duplicate Entry");
+        throw new Error(data.msg || "Duplicate Entry");
       }
     },
     onError: (error) => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message.includes("duplicate") 
+        description: error.msg.includes("duplicate") 
           ? "Duplicate entry" 
           : "Error creating retailer",
       });

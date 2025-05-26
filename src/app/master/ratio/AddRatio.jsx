@@ -56,7 +56,7 @@ const AddRatio = () => {
       if (response?.data.code == 200) {
         toast({
           title: "Success",
-          description: "Ratio is Inserted Successfully",
+          description:`${response.data.msg}`,
         });
         await queryClient.invalidateQueries(["ratios"]);
         setOpen(false);
@@ -71,7 +71,7 @@ const AddRatio = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to upload ratio file",
+        description: error.response?.data?.msg || "Failed to upload ratio file",
         variant: "destructive",
       });
     } finally {
