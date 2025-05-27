@@ -112,7 +112,7 @@ const AddBrand = () => {
       toast({
         title: "Error",
         description:
-          error.response?.data?.msg || "Failed to create brand",
+        error.response?.data?.message || "Failed to create brand",
         variant: "destructive",
       });
     } finally {

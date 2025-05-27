@@ -196,7 +196,7 @@ const EditOrderReceived = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.response?.data?.msg || "API Error occurred",
+        description: error.response?.data?.message || "API Error occurred",
       });
     },
   });
@@ -281,7 +281,7 @@ const EditOrderReceived = () => {
                  <form  className="space-y-2">
                               {/* Basic Information Grid */}
                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                <div className="space-y-2">
+                                <div className="space-y-1">
                                   <Label htmlFor="work_order_rc_factory_no">Factory</Label>
                                   <Input
                                     id="work_order_rc_factory_no"
@@ -293,7 +293,7 @@ const EditOrderReceived = () => {
                                   />
                                 </div>
                 
-                                <div className="space-y-2">
+                                <div className="space-y-1">
                                   <Label htmlFor="work_order_rc_id">Work Order ID</Label>
                                   <Input
                                     id="work_order_rc_id"
@@ -305,7 +305,7 @@ const EditOrderReceived = () => {
                                   />
                                 </div>
                 
-                                <div className="space-y-2">
+                                <div className="space-y-1">
                                   <Label htmlFor="work_order_rc_date">
                                     <Calendar className="w-4 h-4 inline mr-1" />
                                     Receive Date
@@ -321,7 +321,7 @@ const EditOrderReceived = () => {
                                   />
                                 </div>
                 
-                                <div className="space-y-2">
+                                <div className="space-y-1">
                                   <Label htmlFor="work_order_rc_dc_no">DC No</Label>
                                   <Input
                                     id="work_order_rc_dc_no"
@@ -333,7 +333,7 @@ const EditOrderReceived = () => {
                                   />
                                 </div>
                 
-                                <div className="space-y-2">
+                                <div className="space-y-1">
                                   <Label htmlFor="work_order_rc_dc_date">
                                     <Calendar className="w-4 h-4 inline mr-1" />
                                     DC Date
@@ -349,7 +349,7 @@ const EditOrderReceived = () => {
                                   />
                                 </div>
                 
-                                <div className="space-y-2">
+                                <div className="space-y-1">
                                   <Label htmlFor="work_order_rc_brand">Brand</Label>
                                   <Input
                                     id="work_order_rc_brand"
@@ -361,7 +361,7 @@ const EditOrderReceived = () => {
                                   />
                                 </div>
                 
-                                <div className="space-y-2">
+                                <div className="space-y-1">
                                   <Label htmlFor="work_order_rc_box">
                                     No of Box <span className="text-red-500">*</span>
                                   </Label>
@@ -374,7 +374,7 @@ const EditOrderReceived = () => {
                                   />
                                 </div>
                 
-                                <div className="space-y-2">
+                                <div className="space-y-1">
                                   <Label htmlFor="work_order_rc_pcs">
                                     Total No of Pcs <span className="text-red-500">*</span>
                                   </Label>
@@ -387,7 +387,7 @@ const EditOrderReceived = () => {
                                   />
                                 </div>
                 
-                                <div className="space-y-2">
+                                <div className="space-y-1">
                                   <Label htmlFor="work_order_rc_fabric_received">
                                     Fabric Received <span className="text-red-500">*</span>
                                   </Label>
@@ -416,7 +416,7 @@ const EditOrderReceived = () => {
                                 </div>
                 
                                 {workorder.work_order_rc_fabric_received === "Yes" && (
-                                  <div className="space-y-2">
+                                  <div className="space-y-1">
                                     <Label htmlFor="work_order_rc_received_by">Fabric Received By</Label>
                                     <Input
                                       id="work_order_rc_received_by"
@@ -427,7 +427,7 @@ const EditOrderReceived = () => {
                                   </div>
                                 )}
                 
-                                <div className={`space-y-2 ${
+                                <div className={`space-y-1 ${
                                   workorder.work_order_rc_fabric_received === "Yes"
                                     ? "xl:col-span-2"
                                     : "xl:col-span-1"
@@ -441,7 +441,7 @@ const EditOrderReceived = () => {
                                   />
                                 </div>
                 
-                                <div className={`space-y-2 ${
+                                <div className={`space-y-1 ${
                                   workorder.work_order_rc_fabric_received === "Yes"
                                     ? "xl:col-span-4"
                                     : "xl:col-span-2"
@@ -460,12 +460,12 @@ const EditOrderReceived = () => {
                               <Separator />
                 
                               {/* Sub Items Section */}
-                              <div className="space-y-2">
+                              <div className="space-y-1">
                                 <h4 className="font-semibold text-lg">Item Details</h4>
                                 <div className="grid gap-4">
                                   {users.map((user, index) => (
-                                    <Card key={index} className="border-l-4 border-l-blue-500">
-                                      <CardContent className="pt-4">
+                                    <div key={index} className="border-l-4 border-l-blue-500 px-2">
+                                     
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                           <Input
                                             type="hidden"
@@ -474,7 +474,7 @@ const EditOrderReceived = () => {
                                             onChange={(e) => onChange(e, index)}
                                           />
                                           
-                                          <div className="space-y-2">
+                                          <div className="space-y-1">
                                             <Label htmlFor={`box_${index}`}>
                                               Box <span className="text-red-500">*</span>
                                             </Label>
@@ -487,7 +487,7 @@ const EditOrderReceived = () => {
                                             />
                                           </div>
                 
-                                          <div className="space-y-2">
+                                          <div className="space-y-1">
                                             <Label htmlFor={`tcode_${index}`}>
                                               T Code <span className="text-red-500">*</span>
                                             </Label>
@@ -500,8 +500,8 @@ const EditOrderReceived = () => {
                                             />
                                           </div>
                                         </div>
-                                      </CardContent>
-                                    </Card>
+                                    
+                                    </div>
                                   ))}
                                 </div>
                               </div>

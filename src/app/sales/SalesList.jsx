@@ -59,6 +59,7 @@ import {
 } from "@/components/LoaderComponent/LoaderComponent";
 
 import Page from "@/app/dashboard/page";
+import moment from "moment";
 const SalesList = () => {
   const {
     data: workordersales,
@@ -166,6 +167,24 @@ const SalesList = () => {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Edit Sales</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() =>
+                      navigate(
+                        `/sales/view-sales/${salesId}`
+                      )
+                    }
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>View Sales</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>

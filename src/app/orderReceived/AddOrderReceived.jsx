@@ -23,6 +23,7 @@ import Page from "../dashboard/page";
 import { getTodayDate } from "@/utils/currentDate";
 import dateyear from "@/utils/DateYear";
 import { useFetchFactory } from "@/hooks/useApi";
+import { LoaderComponent } from "@/components/LoaderComponent/LoaderComponent";
 
 // Zod schema for validation
 const orderSchema = z.object({
@@ -72,7 +73,7 @@ const AddOrderReceived = () => {
   const [users, setUsers] = useState([
     { work_order_rc_sub_barcode: "", work_order_rc_sub_box: "" },
   ]);
-  const { data: factoryData } = useFetchFactory();
+  const { data: factoryData ,isLoading } = useFetchFactory();
 
 
   // Fetch work orders based on factory
@@ -182,7 +183,7 @@ const AddOrderReceived = () => {
     onError: (error) => {
       toast({
         title: "Error",
-        description: error.message,
+        description: error.response?.data?.message,
         variant: "destructive",
       });
     },
@@ -335,7 +336,11 @@ const AddOrderReceived = () => {
     newUsers[index].work_order_rc_sub_barcode = formattedInput;
     setUsers(newUsers);
   };
+if (isLoading) {
+    return <LoaderComponent name=" Data" />;
+  }
 
+ 
   return (
     <Page>
       <div className="max-w-full mx-auto">
@@ -355,10 +360,10 @@ const AddOrderReceived = () => {
           </CardHeader>
 
           <CardContent className="p-4">
-            <form  className="space-y-6">
+            <form  className="space-y-2">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Factory */}
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <Label htmlFor="factory">
                     Factory <span className="text-red-500">*</span>
                   </Label>
@@ -390,7 +395,7 @@ const AddOrderReceived = () => {
                 </div>
 
                 {/* Work Order ID */}
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <Label htmlFor="workOrderId">
                     Work Order ID <span className="text-red-500">*</span>
                   </Label>
@@ -407,8 +412,8 @@ const AddOrderReceived = () => {
                       const selectedWorkOrder = workOrders.find((item) => item.id === value);
                       setWorkorder({
                         ...workorder,
-                        work_order_rc_id: selectedWorkOrder?.id, // Store the id
-                        work_order_no: selectedWorkOrder.work_order_no, // Store the work_order_no
+                        work_order_rc_id: selectedWorkOrder?.id, 
+                        work_order_no: selectedWorkOrder.work_order_no, 
                       });
                     }}
                   
@@ -433,7 +438,7 @@ const AddOrderReceived = () => {
                 </div>
 
                 {/* Brand */}
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <Label htmlFor="brand">Brand (read only)</Label>
                   <Input
                     id="brand"
@@ -444,7 +449,7 @@ const AddOrderReceived = () => {
                 </div>
 
                 {/* Receive Date */}
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <Label htmlFor="receiveDate">
                     Receive Date <span className="text-red-500">*</span>
                   </Label>
@@ -458,7 +463,7 @@ const AddOrderReceived = () => {
                 </div>
 
                 {/* DC No */}
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <Label htmlFor="dcNo">
                     DC No <span className="text-red-500">*</span>
                   </Label>
@@ -471,7 +476,7 @@ const AddOrderReceived = () => {
                 </div>
 
                 {/* DC Date */}
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <Label htmlFor="dcDate">
                     DC Date <span className="text-red-500">*</span>
                   </Label>
@@ -485,7 +490,7 @@ const AddOrderReceived = () => {
                 </div>
 
                 {/* No of Box */}
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <Label htmlFor="boxCount">
                     No of Box <span className="text-red-500">*</span>
                   </Label>
@@ -500,7 +505,7 @@ const AddOrderReceived = () => {
                 </div>
 
                 {/* Total No of Pcs */}
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <Label htmlFor="pcsCount">
                     Total No of Pcs <span className="text-red-500">*</span>
                   </Label>
@@ -513,7 +518,7 @@ const AddOrderReceived = () => {
                 </div>
 
                 {/* Fabric Received */}
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <Label htmlFor="fabricReceived">
                     Fabric Received <span className="text-red-500">*</span>
                   </Label>
@@ -546,7 +551,7 @@ const AddOrderReceived = () => {
 
                 {/* Fabric Received By (conditional) */}
                 {workorder.work_order_rc_fabric_received === "Yes" && (
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <Label htmlFor="receivedBy">Fabric Received By</Label>
                     <Input
                       id="receivedBy"
@@ -559,7 +564,7 @@ const AddOrderReceived = () => {
 
                 {/* Fabric Leftover */}
                 <div
-                  className={`space-y-2 ${
+                  className={`space-y-1 ${
                     workorder.work_order_rc_fabric_received === "Yes"
                       ? "col-span-2"
                       : ""
@@ -575,7 +580,10 @@ const AddOrderReceived = () => {
                 </div>
 
                 {/* Remarks */}
-                <div className="space-y-2 col-span-full">
+                <div className={`space-y-1 ${
+                    workorder.work_order_rc_fabric_received === "Yes"
+                      ? "col-span-full"
+                      : "col-span-2"}`}>
                   <Label htmlFor="remarks">Remarks</Label>
                   <Input
                     id="remarks"
@@ -586,14 +594,14 @@ const AddOrderReceived = () => {
                 </div>
               </div>
 
-              <hr className="my-4" />
+              <hr className="my-2" />
 
               {/* Barcode entries */}
-              <div className="space-y-4">
+              <div className="space-y-2">
                 <Label>Barcode Entries (Total: {users.length})</Label>
 
-                <ScrollArea className="h-64 rounded-md border p-4">
-                  <div className="space-y-3">
+                {/* <ScrollArea className="h-64 rounded-md border p-4"> */}
+                  <div className="space-y-1">
                     {users.map((user, index) => (
                       <div key={index} className="flex items-center gap-3">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-3 w-full">
@@ -633,6 +641,7 @@ const AddOrderReceived = () => {
                               <Button
                                 variant="outline"
                                 size="icon"
+                                type="button"
                                 onClick={() => removeUser(index)}
                                 disabled={users.length <= 1}
                               >
@@ -644,7 +653,7 @@ const AddOrderReceived = () => {
                       </div>
                     ))}
                   </div>
-                </ScrollArea>
+                {/* </ScrollArea> */}
 
                 <Button
                   variant="outline"

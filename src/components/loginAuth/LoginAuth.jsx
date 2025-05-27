@@ -95,7 +95,7 @@ export default function LoginAuth() {
         toast.error("Login Failed: Unexpected response.");
       }
     } catch (error) {
-      console.error("❌ Login Error:", error.response?.data || error.message);
+      console.error("❌ Login Error:", error.response?.data || error.response?.data?.message);
 
       toast({
         variant: "destructive",

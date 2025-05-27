@@ -295,7 +295,7 @@ const CreateWorkOrder = () => {
         variant: "destructive",
         title: "Error",
         description:
-          error.response?.data?.msg ||
+        error.response?.data?.message ||
           "Submission failed. Please try again.",
       });
     },

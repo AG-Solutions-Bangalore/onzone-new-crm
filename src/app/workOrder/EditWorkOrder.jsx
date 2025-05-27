@@ -376,7 +376,7 @@ const EditWorkOrder = () => {
         variant: "destructive",
         title: "Error",
         description:
-          error.response?.data?.msg || "Update failed. Please try again.",
+        error.response?.data?.message || "Update failed. Please try again.",
       });
     },
   });
