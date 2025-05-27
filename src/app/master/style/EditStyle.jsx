@@ -120,7 +120,7 @@ const EditStyle = ({styleId}) => {
           toast({
             title: "Error",
             description:
-              error.response?.data?.msg || "Failed to update style",
+            error.response?.data?.message || "Failed to update style",
             variant: "destructive",
           });
         } finally {

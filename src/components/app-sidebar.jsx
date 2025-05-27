@@ -230,19 +230,19 @@ export function AppSidebar({ ...props }) {
         items: [
           {
             title: "Retailer Report",
-            url: "#",
+            url: "/report/retailer-report",
           },
           {
             title: "Work Order Report",
-            url: "#",
+            url: "/report/work-order-report",
           },
           {
             title: "Received Report",
-            url: "#",
+            url: "/report/received-report",
           },
           {
             title: "Sales Report",
-            url: "#",
+            url: "/report/sales-report",
           },
           
         ],

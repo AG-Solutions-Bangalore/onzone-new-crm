@@ -70,7 +70,7 @@ const AddWidth = () => {
               toast({
                 title: "Error",
                 description:
-                  error.response?.data?.msg || "Failed to create width",
+                error.response?.data?.message || "Failed to create width",
                 variant: "destructive",
               });
             } finally {

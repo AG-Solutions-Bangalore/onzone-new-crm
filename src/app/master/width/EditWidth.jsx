@@ -117,7 +117,7 @@ const EditWidth = ({ widthId }) => {
     } catch (error) {
       toast({
         title: "Error",
-        description: error.response?.data?.msg || "Failed to update width",
+        description: error.response?.data?.message || "Failed to update width",
         variant: "destructive",
       });
     } finally {

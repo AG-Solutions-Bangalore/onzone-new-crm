@@ -71,7 +71,7 @@ const AddRatio = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: error.response?.data?.msg || "Failed to upload ratio file",
+        description: error.response?.data?.message || "Failed to upload ratio file",
         variant: "destructive",
       });
     } finally {

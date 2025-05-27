@@ -139,7 +139,7 @@ const EditHalfRatio = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message.includes("duplicate") 
+        description: error.response?.data?.message.includes("duplicate") 
           ? "Duplicate entry" 
           : "Update failed",
       })

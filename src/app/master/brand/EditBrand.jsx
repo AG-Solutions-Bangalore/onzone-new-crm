@@ -95,7 +95,7 @@ const EditBrand = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message.includes("duplicate") ? "Duplicate entry" : "Update failed",
+        description: error.response?.data?.message.includes("duplicate") ? "Duplicate entry" : "Update failed",
       })
     }
   })

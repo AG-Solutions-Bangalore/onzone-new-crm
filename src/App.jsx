@@ -32,6 +32,13 @@ import AddOrderReceived from "./app/orderReceived/AddOrderReceived";
 import EditOrderReceived from "./app/orderReceived/EditOrderReceived";
 import ViewOrderReceived from "./app/orderReceived/ViewOrderReceived";
 import DcReceiptReceived from "./app/orderReceived/DcReceiptReceived";
+import CreateSales from "./app/sales/CreateSales";
+import EditSales from "./app/sales/EditSales";
+import ViewSales from "./app/sales/ViewSales";
+import RetailerReport from "./app/report/retailer/RetailerReport";
+import WorkOrderReport from "./app/report/workOrder/WorkOrderReport";
+import ReceivedReport from "./app/report/received/ReceivedReport";
+import SalesReport from "./app/report/sales/SalesReport";
 
 
 
@@ -107,12 +114,20 @@ function App() {
       <Route path="/order-received/dc-receipt/:id" element={<DcReceiptReceived />} />
       {/* sales  */}
       <Route path="/sales" element={<SalesList />} />
+      <Route path="/sales/add-sales" element={<CreateSales />} />
+      <Route path="/sales/view-sales/:id" element={<ViewSales />} />
+      <Route path="/sales/edit-sales/:id" element={<EditSales />} />
       {/* finished stock  */}
       <Route path="/finished-stock" element={<FinishedStockList />} />
    
 
-   {/* report  */}
+   {/* finished stock  */}
    <Route path="/finished-stock" element={<FinishedStockList />} />
+   {/* report  */}
+   <Route path="/report/retailer-report" element={<RetailerReport />} />
+   <Route path="/report/work-order-report" element={<WorkOrderReport />} />
+   <Route path="/report/received-report" element={<ReceivedReport />} />
+   <Route path="/report/sales-report" element={<SalesReport />} />
       </Routes>
     </>
   );

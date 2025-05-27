@@ -295,3 +295,8 @@ export const useFetchCurrentYear = () => {
     createQueryConfig(["current_year"], "/api/fetch-year")
   );
 };
+export const useFetchRetailer = () => {
+  return useQuery(
+    createQueryConfig(["retailers"], "/api/fetch-customer")
+  );
+};
