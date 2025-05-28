@@ -30,6 +30,7 @@ import * as z from "zod";
 import BASE_URL from "@/config/BaseUrl";
 import Page from "../dashboard/page";
 import { useToast } from "@/hooks/use-toast";
+import { LoaderComponent } from "@/components/LoaderComponent/LoaderComponent";
 
 const formSchema = z.object({
   work_order_year: z.string(),
@@ -77,14 +78,21 @@ const CreateWorkOrder = () => {
   const [ratioValue, setRatioValue] = useState("");
 
  
-  const { data: brandData } = useFetchBrand();
-  const { data: widthData } = useFetchWidth();
-  const { data: styleData } = useFetchStyle();
-  const { data: ratioData } = useFetchRatio();
-  const { data: halfRatioData } = useFetchHalfRatio();
-  const { data: factoryData } = useFetchFactory();
-  const { data: yearData } = useFetchCurrentYear();
-
+  // const { data: brandData ,isLoading} = useFetchBrand();
+  // const { data: widthData } = useFetchWidth();
+  // const { data: styleData } = useFetchStyle();
+  // const { data: ratioData } = useFetchRatio();
+  // const { data: halfRatioData } = useFetchHalfRatio();
+  // const { data: factoryData } = useFetchFactory();
+  // const { data: yearData } = useFetchCurrentYear();
+  const { data: brandData, isFetching: isBrandLoading, refetch: refetchBrands } = useFetchBrand();
+  const { data: widthData, isFetching: isWidthLoading, refetch: refetchWidths } = useFetchWidth();
+  const { data: styleData, isFetching: isStyleLoading, refetch: refetchStyles } = useFetchStyle();
+  const { data: ratioData, isFetching: isRatioLoading, refetch: refetchRatios } = useFetchRatio();
+  const { data: halfRatioData, isFetching: isHalfRatioLoading, refetch: refetchHalfRatios } = useFetchHalfRatio();
+  const { data: factoryData, isFetching: isFactoryLoading, refetch: refetchFactories } = useFetchFactory();
+  const { data: yearData, isFetching: isYearLoading, refetch: refetchYears } = useFetchCurrentYear();
+  
   const [workorder, setWorkOrder] = useState({
     work_order_year: yearData?.year?.current_year || "",
     work_order_factory_no: "",
@@ -374,7 +382,9 @@ const CreateWorkOrder = () => {
 
     createWorkOrderMutation.mutate(data);
   };
-
+if (isBrandLoading && isWidthLoading  && isRatioLoading && isHalfRatioLoading && isFactoryLoading && isYearLoading) {
+    return <LoaderComponent name=" Data" />;
+  }
   return (
     <Page>
       <div className="space-y-4">
@@ -387,6 +397,7 @@ const CreateWorkOrder = () => {
             <div className="grid grid-cols-1 gap-4  md:grid-cols-2 lg:grid-cols-4">
               {/* Factory */}
               <div className="space-y-1">
+                
                 <Label htmlFor="work_order_factory_no">
                   Factory <span className="text-red-500">*</span>
                 </Label>

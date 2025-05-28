@@ -73,7 +73,7 @@ const AddOrderReceived = () => {
   const [users, setUsers] = useState([
     { work_order_rc_sub_barcode: "", work_order_rc_sub_box: "" },
   ]);
-  const { data: factoryData ,isLoading } = useFetchFactory();
+  const { data: factoryData ,isFetching } = useFetchFactory();
 
 
   // Fetch work orders based on factory
@@ -336,7 +336,7 @@ const AddOrderReceived = () => {
     newUsers[index].work_order_rc_sub_barcode = formattedInput;
     setUsers(newUsers);
   };
-if (isLoading) {
+if (isFetching) {
     return <LoaderComponent name=" Data" />;
   }
 
