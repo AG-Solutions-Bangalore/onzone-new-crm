@@ -23,6 +23,7 @@ import Page from "../dashboard/page";
 import { getTodayDate } from "@/utils/currentDate";
 import dateyear from "@/utils/DateYear";
 import { useFetchRetailer } from "@/hooks/useApi";
+import { LoaderComponent } from "@/components/LoaderComponent/LoaderComponent";
 
 // Zod schema for validation
 const orderSchema = z.object({
@@ -58,7 +59,7 @@ const CreateSales = () => {
   const [users, setUsers] = useState([{ work_order_sa_sub_barcode: "" }]);
 
  
- const { data: retailerData } = useFetchRetailer();
+ const { data: retailerData ,isFetching } = useFetchRetailer();
 
 
   const submitMutation = useMutation({
@@ -233,7 +234,9 @@ const CreateSales = () => {
       }
     }
   };
-
+if (isFetching) {
+    return <LoaderComponent name=" Data" />;
+  }
   return (
     <Page>
       <div className="max-w-full mx-auto">

@@ -3,8 +3,10 @@ import {
   Bell,
   ChevronsUpDown,
   CreditCard,
+  Key,
   LogOut,
   Sparkles,
+  User,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,15 +27,16 @@ import {
 } from "@/components/ui/sidebar";
 import { Link, useNavigate } from "react-router-dom";
 import BASE_URL from "@/config/BaseUrl";
+import { useState } from "react";
+import ChangePassword from "@/app/auth/ChangePassword";
+import Profile from "@/app/auth/Profile";
 
 export function NavUser({ user }) {
   const { isMobile } = useSidebar();
   const navigate = useNavigate();
-  // const user_position = localStorage.getItem("user_position")
-  // const handleLogout = () => {
-  //   localStorage.clear();
-  //   navigate("/");
-  // };
+  const [open, setOpen] = useState(false);
+    const [openprofile, setOpenProfile] = useState(false);
+
   const handleLogout = async () => {
  
      
@@ -50,6 +53,7 @@ export function NavUser({ user }) {
     .toUpperCase();
 
   return (
+    <>
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
@@ -120,6 +124,16 @@ export function NavUser({ user }) {
              
             </DropdownMenuGroup> */}
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setOpenProfile(true)}>
+                  <User />
+
+                  <span className=" cursor-pointer">Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setOpen(true)}>
+                  <Key />
+
+                  <span className=" cursor-pointer">Change Password</span>
+                </DropdownMenuItem>
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut />
 
@@ -129,5 +143,8 @@ export function NavUser({ user }) {
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
+        <ChangePassword setOpen={setOpen} open={open} />
+        <Profile setOpen={setOpenProfile} open={openprofile} />
+      </>
   );
 }
