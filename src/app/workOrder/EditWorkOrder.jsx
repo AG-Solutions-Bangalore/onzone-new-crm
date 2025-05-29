@@ -116,6 +116,7 @@ const EditWorkOrder = () => {
     work_order_ratio_consumption: "",
     work_order_ratio_h: "",
     work_order_ratio_h_consumption: "",
+    work_order_no:""
   });
 
   const [work_order_count, setCount] = useState(0);
@@ -162,6 +163,7 @@ const EditWorkOrder = () => {
         work_order_ratio_consumption: wo?.work_order_ratio_consumption || "",
         work_order_ratio_h: wo?.work_order_ratio_h || "",
         work_order_ratio_h_consumption: wo?.work_order_ratio_h_consumption || "",
+        work_order_no: wo?.work_order_no || "",
       });
       
       setRatioValue(wo?.work_order_ratio_h || "");
@@ -183,11 +185,11 @@ const EditWorkOrder = () => {
           work_order_sub_a: String(sub.work_order_sub_a || ""),
           work_order_sub_b: String(sub.work_order_sub_b || ""),
           work_order_sub_c: String(sub.work_order_sub_c || ""),
-          work_order_sub_length: String(sub.work_order_sub_length || ""),
+          work_order_sub_length: String(sub.work_order_sub_length || 0),
           work_order_sub_new_length: String(sub.work_order_sub_new_length || ""),
-          work_order_sub_half_shirt: String(sub.work_order_sub_half_total || ""),
-          work_order_sub_full_shirt: String(sub.work_order_sub_full_total || ""),
-          work_order_sub_amount: String(sub.work_order_sub_amount || ""),
+          work_order_sub_half_shirt: String(sub.work_order_sub_half_total || 0),
+          work_order_sub_full_shirt: String(sub.work_order_sub_full_total || 0),
+          work_order_sub_amount: String(sub.work_order_sub_amount || 0),
         }));
         setUsers(mappedUsers);
       } else {
@@ -473,7 +475,7 @@ const EditWorkOrder = () => {
     <Page>
       <div className="space-y-4">
         <h3 className="text-lg font-bold text-center md:text-left md:text-xl">
-          Edit Work Order
+          Edit Work Order - {workorder?.work_order_no}
         </h3>
 
         <div className="p-4 bg-white rounded-lg shadow">
