@@ -215,6 +215,12 @@ const WorkOrderList = () => {
         header: "Total",
         cell: ({ row }) => <div>{row.getValue("Total")}</div>,
       },
+      {
+        accessorKey: "total_receive",
+        id: "Receive",
+        header: "Receive",
+        cell: ({ row }) => <div>{row.getValue("Receive")}</div>,
+      },
      
       {
         accessorKey: "work_order_status",
@@ -246,6 +252,7 @@ const WorkOrderList = () => {
         header: "Action",
         cell: ({ row }) => {
           const workOrderId = row.original.id;
+          const deleteReceive = row.original.total_receive;
     const materialStatus = row.original.work_order_status
           return (
             <div className="flex flex-row">
@@ -326,26 +333,28 @@ const WorkOrderList = () => {
               </TooltipProvider>
          
               
+  {deleteReceive === 0 && (
+
+<TooltipProvider>
+<Tooltip>
+  <TooltipTrigger asChild>
+    
+     <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => {
+        setDeleteWorkOrderId(workOrderId);
+        setDeleteConfirmOpen(true);
+      }}
+    >
+      <Trash className="h-4 w-4" />
+    </Button>
+  </TooltipTrigger>
+  <TooltipContent>Delete Work Order</TooltipContent>
+</Tooltip>
+</TooltipProvider>
+  )}
   
-  
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    
-                     <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setDeleteWorkOrderId(workOrderId);
-                        setDeleteConfirmOpen(true);
-                      }}
-                    >
-                      <Trash className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Delete Work Order</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
             </div>
           );
         },
