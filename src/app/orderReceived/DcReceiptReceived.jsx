@@ -165,7 +165,7 @@ const DcReceiptReceived = () => {
               <CardTitle className="text-lg font-semibold">
                 Dc Receipt
               </CardTitle>
-              {orderReceivedStatus}
+              {/* {orderReceivedStatus} */}
               {orderReceivedStatus?.toLowerCase() !== "received" && (
                 <Button
                   variant="outline"
