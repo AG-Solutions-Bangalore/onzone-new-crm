@@ -29,7 +29,7 @@ const tablecss = {
   
       /* Remove URLs and other default print information */
        @page { margin: 2mm 2mm 2mm 2mm; } 
-      @page :first { margin-top: 2mm; margin-bottom: 2mm; margin-left: 2mm; margin-right: 2mm; } 
+      @page :first { margin-top: 12mm; margin-bottom: 2mm; margin-left: 2mm; margin-right: 2mm; } 
       @page :left { margin-left: 2mm; margin-right: 2mm; } 
       @page :right { margin-left: 2mm; margin-right: 2mm; }
       

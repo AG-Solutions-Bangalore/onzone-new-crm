@@ -10,7 +10,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ChevronDown, Search, Trash } from "lucide-react";
+import { ChevronDown, Search, Trash, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -241,7 +241,7 @@ const WorkOrderMaterial = () => {
                 setDeleteConfirmOpen(true);
               }}
             >
-              <Trash className="h-4 w-4" /> Close Work
+              <X  className="h-4 w-4" /> Close Work Order
             </Button>
           )}
         </div>
