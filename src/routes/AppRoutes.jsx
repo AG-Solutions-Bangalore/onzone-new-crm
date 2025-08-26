@@ -4,6 +4,8 @@ import AuthRoute from "./AuthRoute";
 import ProtectedRoute from "./ProtectedRoute";
 import Login from "@/app/auth/Login";
 import ForgotPassword from "@/components/ForgotPassword/ForgotPassword";
+import OrderForm from "@/app/order-form/OrderForm";
+import OrderFormView from "@/app/order-form/OrderFormView";
 // import Home from "@/app/home/Home";
 // import BrandList from "@/app/master/brand/BrandList";
 // import EditBrand from "@/app/master/brand/EditBrand";
@@ -190,6 +192,11 @@ function AppRoutes() {
         <Route path="/sales/add-sales" element={<CreateSales />} />
         <Route path="/sales/view-sales/:id" element={<ViewSales />} />
         <Route path="/sales/edit-sales/:id" element={<EditSales />} />
+      
+
+        {/* order form  */}
+        <Route path="/order-form" element={<OrderForm />} />
+        <Route path="/order-form-view" element={<OrderFormView />} />
         {/* finished stock  */}
         <Route path="/finished-stock" element={<FinishedStockList />} />
 

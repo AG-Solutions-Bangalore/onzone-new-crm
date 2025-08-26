@@ -148,6 +148,12 @@ export function AppSidebar({ ...props }) {
         isActive: false,
       },
       {
+        title: "Order Form",
+        url: "/order-form",
+        icon: NotebookText,
+        isActive: false,
+      },
+      {
         title: "Finished Stock",
         url: "/finished-stock",
         icon: NotebookText,
