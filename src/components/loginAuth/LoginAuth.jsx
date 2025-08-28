@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import {
@@ -203,11 +203,25 @@ export default function LoginAuth() {
               </div>
             </form>
             <CardDescription
-              className="cursor-pointer flex justify-end mt-4 underline"
-              onClick={() => navigate("/forgot-password")}
+          className="flex flex-row items-center justify-between"
             >
-              Forgot Password
+              <Link to={'/forgot-password'}>
+             <button
+                 className="cursor-pointer flex justify-end mt-4 underline"
+              >
+             Forgot Password
+             </button>
+             </Link>
+             <Link to={'/create-order'}>
+             <button
+                  className="cursor-pointer flex justify-end mt-4 underline"
+       
+                  >
+          Create Order
+             </button>
+             </Link>
             </CardDescription>
+         
           </CardContent>
         </Card>
       </motion.div>
