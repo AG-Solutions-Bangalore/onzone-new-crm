@@ -27,58 +27,42 @@ export default function Page({ children }) {
     navigate(-1);
   };
 
-  // see elgress for this 
+
   
   return (
-    (<SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <header
-          className="flex flex-row  justify-between  h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4 ">
-            <SidebarTrigger className="-ml-1 hover:bg-yellow-100" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  {/* <BreadcrumbLink href="#" onClick={handleBackClick} >
-                    Home
-                  </BreadcrumbLink> */}
-                   <BreadcrumbLink 
-                    href="#" 
-                    onClick={handleBackClick}
-                    className="flex items-center gap-2 text-muted-foreground hover:text-yellow-900"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    <span>Back</span>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                {/* <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Brand</BreadcrumbPage>
-                </BreadcrumbItem> */}
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-          
-
-         
-          
-     
-          
-        </header>
-        <div className="flex flex-1    flex-col gap-4 p-4 pt-0">
-          {/* <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-            <div className="aspect-video rounded-xl bg-muted/50" />
-            <div className="aspect-video rounded-xl bg-muted/50" />
-            <div className="aspect-video rounded-xl bg-muted/50" />
-          </div> */}
-          <div className="min-h-[100vh] flex-1 rounded-xl  p-2 md:min-h-min" >
-          {children}
+    <SidebarProvider>
+    <AppSidebar />
+    <SidebarInset>
+      <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex items-center gap-2 px-4 w-full">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 h-4" />
+          <Breadcrumb className="w-full">
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink 
+                  href="#" 
+                  onClick={handleBackClick}
+                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">Back</span>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+      </header>
+      <main className="flex-1 p-2 md:p-4 pt-2">
+        <div className="mx-auto w-full max-w-[calc(100vw-1rem)] ">
+          <div className="rounded-lg   ">
+            <div className="w-full overflow-x-auto">
+              {children}
+            </div>
           </div>
         </div>
-      </SidebarInset>
-      
-    </SidebarProvider>)
+      </main>
+    </SidebarInset>
+  </SidebarProvider>
   );
 }

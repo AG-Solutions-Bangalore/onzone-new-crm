@@ -19,7 +19,7 @@ function App() {
   return (
     <>
       <Toaster />
-      <DisableInspect/>
+      {/* <DisableInspect/> */}
       <Suspense fallback={<LoadingBar/>}>
       <AppRoutes/>
       </Suspense>

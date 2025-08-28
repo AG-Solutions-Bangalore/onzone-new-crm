@@ -11,8 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Search, Plus, Trash2, Barcode, Keyboard, ArrowLeft, Scan, X } from 'lucide-react';
+import { Loader2, Search, Plus, Trash2, Barcode, Keyboard, ArrowLeft, Scan, X, ScanQrCode } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Scanner } from "@yudiel/react-qr-scanner";
 import {
   Dialog,
   DialogContent,
@@ -40,8 +41,10 @@ const OrderForm = () => {
   const [currentBarcode, setCurrentBarcode] = useState('');
   const [quantity, setQuantity] = useState(1);
   const barcodeInputRef = useRef(null);
+  const mobileBarcodeInputRef = useRef(null);
   const quantityInputRef = useRef(null);
   const navigate = useNavigate()
+  const [showScanner, setShowScanner] = useState(false);
   useEffect(() => {
     if (showResults && scanningActive && barcodeInputRef.current) {
       barcodeInputRef.current.focus();
@@ -51,8 +54,8 @@ const OrderForm = () => {
     if (barcodeModalOpen && quantityInputRef.current) {
       setTimeout(() => {
         quantityInputRef.current.focus();
-        const length = quantityInputRef.current.value.length;
-        quantityInputRef.current.setSelectionRange(length, length);
+        // const length = quantityInputRef.current.value.length;
+        // quantityInputRef.current.setSelectionRange(length, length);
       }, 100);
     }
   }, [barcodeModalOpen]);
@@ -214,7 +217,22 @@ const OrderForm = () => {
       }, 100);
     }
   };
-  
+  const handleBarcodeScanMobile = (result) => {
+    if (result) {
+      setCurrentBarcode(result);
+      
+      const existingItem = items.find(item => item.barcode === result);
+      
+      if (existingItem) {
+        setQuantity(existingItem.quantity + 1);
+      } else {
+        setQuantity(1);
+      }
+      
+      setBarcodeModalOpen(true);
+      setShowScanner(false);
+    }
+  };
 const handleNumberClick = (num) => {
   if (quantity === '' || quantity === 0) {
     setQuantity(num);
@@ -224,11 +242,11 @@ const handleNumberClick = (num) => {
   }
   
 
-  setTimeout(() => {
-    if (quantityInputRef.current) {
-      quantityInputRef.current.focus();
-    }
-  }, 10);
+  // setTimeout(() => {
+  //   if (quantityInputRef.current) {
+  //     quantityInputRef.current.focus();
+  //   }
+  // }, 10);
 };
 
 const handleQuantityChange = (value) => {
@@ -263,21 +281,21 @@ const handleBackspace = () => {
   }
   
 
-  setTimeout(() => {
-    if (quantityInputRef.current) {
-      quantityInputRef.current.focus();
-    }
-  }, 10);
+  // setTimeout(() => {
+  //   if (quantityInputRef.current) {
+  //     quantityInputRef.current.focus();
+  //   }
+  // }, 10);
 };
 
 const handleClear = () => {
   setQuantity('');
  
-  setTimeout(() => {
-    if (quantityInputRef.current) {
-      quantityInputRef.current.focus();
-    }
-  }, 10);
+  // setTimeout(() => {
+  //   if (quantityInputRef.current) {
+  //     quantityInputRef.current.focus();
+  //   }
+  // }, 10);
 };
 
 const incrementQuantity = () => {
@@ -460,37 +478,46 @@ const decrementQuantity = () => {
                 <div className="bg-muted p-3 rounded-lg mb-4">
                   <Label className="text-xs font-medium">SKU Scanner</Label>
                   <div className="flex gap-2 mt-2">
-                    <Input
-                      ref={barcodeInputRef}
-                      placeholder="Scan barcode or enter manually..."
-                      onKeyDown={handleBarcodeScan}
-                      className="flex-1 h-8 text-sm"
-                      disabled={!scanningActive}
-                    />
-                    <Button 
-                      onClick={() => {
-                        if (barcodeInputRef.current) {
-                          barcodeInputRef.current.focus();
-                        }
-                      }}
-                      disabled={!scanningActive}
-                      className="h-8 px-2"
-                    >
-                      <Scan className="h-3 w-3" />
-                    </Button>
+                  <Input
+  ref={mobileBarcodeInputRef}
+  placeholder="Scan sku or enter manually..."
+  onKeyDown={handleBarcodeScanMobile}
+  className="flex-1 h-8 text-sm"
+  disabled={!scanningActive}
+/>
+{/* for open the scanner  */}
+<Button
+ onClick={() => setShowScanner(true)}
+ disabled={!scanningActive}
+className="h-8 px-2"
+>
+
+  <ScanQrCode className='h-3 w-3 text-yellow-700'/>
+</Button>
+                 <Button 
+  onClick={() => {
+    if (mobileBarcodeInputRef.current) {
+      mobileBarcodeInputRef.current.focus();
+    }
+  }}
+  disabled={!scanningActive}
+  className="h-8 px-2"
+>
+  <Scan className="h-3 w-3 text-blue-500" />
+</Button>
                     <Button
                       variant={scanningActive ? "outline" : "default"}
                       size="sm"
                       onClick={() => setScanningActive(!scanningActive)}
                       className="h-8 px-2"
                     >
-                      {scanningActive ? <X size={14} /> : <Scan size={14} />}
+                      {scanningActive ? <X className='text-red-500' size={14} /> : <Scan className='text-red-500' size={14} />}
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
                     {scanningActive 
-                      ? "Scan barcodes or type and press Enter to add items" 
-                      : "Click Scan to activate barcode scanning"}
+                      ? "Scan sku or type and press Enter to add items" 
+                      : "Click Scan to activate sku scanning"}
                   </p>
                 </div>
                 
@@ -758,7 +785,7 @@ const decrementQuantity = () => {
                         <div className="flex gap-2 mt-2">
                           <Input
                             ref={barcodeInputRef}
-                            placeholder="Scan barcode or enter manually..."
+                            placeholder="Scan sku or enter manually..."
                             onKeyDown={handleBarcodeScan}
                             className="flex-1"
                             disabled={!scanningActive}
@@ -777,8 +804,8 @@ const decrementQuantity = () => {
                         </div>
                         <p className="text-xs text-muted-foreground mt-2">
                           {scanningActive 
-                            ? "Scan barcodes or type and press Enter to add items" 
-                            : "Click Scan to activate barcode scanning"}
+                            ? "Scan sku or type and press Enter to add items" 
+                            : "Click Scan to activate sku scanning"}
                         </p>
                       </div>
                     
@@ -883,29 +910,16 @@ const decrementQuantity = () => {
         <div className="flex flex-col items-center">
         <Input
   ref={quantityInputRef}
-  type="tel"
+  type="text"  
   value={quantity}
   onChange={(e) => handleQuantityChange(e.target.value)}
   className="w-24 h-12 text-center text-xl"
-  onFocus={(e) => {
- 
-    const length = e.target.value.length;
-    e.target.setSelectionRange(length, length);
-  }}
-  onSelect={(e) => {
- 
-    const length = e.target.value.length;
-    e.target.setSelectionRange(length, length);
-  }}
+  readOnly={true}  
   onKeyDown={(e) => {
     if (e.key === 'Enter') {
       handleQuantitySubmit();
     }
    
-    if (e.key === 'Backspace' || e.key === 'Delete') {
-      e.preventDefault();
-      handleBackspace();
-    }
   }}
 />
           <span className="text-xs text-muted-foreground mt-1">Quantity</span>
@@ -973,6 +987,37 @@ const decrementQuantity = () => {
       </DialogFooter>
     </DialogContent>
   </Dialog>
+
+  <Dialog open={showScanner} onOpenChange={setShowScanner}>
+  <DialogContent className="max-w-md p-0 overflow-hidden">
+    <DialogHeader className="px-4 pt-4">
+      <DialogTitle>Scan Barcode</DialogTitle>
+      <DialogDescription>
+        Point your camera at a barcode to scan
+      </DialogDescription>
+    </DialogHeader>
+    <div className="h-64 relative">
+      <Scanner
+        onScan={(detectedCodes) => {
+          if (detectedCodes && detectedCodes.length > 0) {
+            const result = detectedCodes[0].rawValue;
+            handleBarcodeScan(result);
+          }
+        }}
+        onError={(error) => console.log(error?.message)}
+        formats={['code_128', 'ean_13', 'upc_a', 'qr_code']}
+      />
+    </div>
+    <DialogFooter className="px-4 pb-4">
+      <Button 
+        variant="secondary" 
+        onClick={() => setShowScanner(false)}
+      >
+        Cancel
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
     </Page>
   );
 };
