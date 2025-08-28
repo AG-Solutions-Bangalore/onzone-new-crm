@@ -4,8 +4,13 @@ import AuthRoute from "./AuthRoute";
 import ProtectedRoute from "./ProtectedRoute";
 import Login from "@/app/auth/Login";
 import ForgotPassword from "@/components/ForgotPassword/ForgotPassword";
-import OrderForm from "@/app/order-form/OrderForm";
+
 import OrderFormView from "@/app/order-form/OrderFormView";
+import CreateOrderForm from "@/app/order-form/CreateOrderForm";
+import OrderFormList from "@/app/order-form/OrderFormList";
+import EditOrderForm from "@/app/order-form/EditOrderForm";
+import PublicCreateOrderForm from "@/app/order-form/PublicCreateOrderForm";
+import CreateStock from "@/app/stock/CreateStock";
 // import Home from "@/app/home/Home";
 // import BrandList from "@/app/master/brand/BrandList";
 // import EditBrand from "@/app/master/brand/EditBrand";
@@ -111,6 +116,7 @@ function AppRoutes() {
       <Route path="/" element={<AuthRoute />}>
         <Route path="/" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/create-order" element={<PublicCreateOrderForm />} />
       </Route>
 
       <Route path="/" element={<ProtectedRoute />}>
@@ -195,8 +201,13 @@ function AppRoutes() {
       
 
         {/* order form  */}
-        <Route path="/order-form" element={<OrderForm />} />
-        <Route path="/order-form-view" element={<OrderFormView />} />
+        <Route path="/order-form" element={<OrderFormList />} />
+        <Route path="/order-form/create-order-form" element={<CreateOrderForm />} />
+        <Route path="/order-form/view-order-form/:id" element={<OrderFormView />} />
+        <Route path="/order-form/view-edit-form/:id" element={<EditOrderForm />} />
+
+           {/* stock  */}
+           <Route path="/create-stock" element={<CreateStock />} />
         {/* finished stock  */}
         <Route path="/finished-stock" element={<FinishedStockList />} />
 

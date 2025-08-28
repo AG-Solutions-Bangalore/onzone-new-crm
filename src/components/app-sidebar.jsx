@@ -136,6 +136,12 @@ export function AppSidebar({ ...props }) {
         isActive: false,
       },
       {
+        title: "Stock",
+        url: "/create-stock",
+        icon: Blocks,
+        isActive: false,
+      },
+      {
         title: "Order Received",
         url: "/order-received",
         icon: NotebookText,

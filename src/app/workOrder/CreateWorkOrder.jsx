@@ -199,7 +199,7 @@ const CreateWorkOrder = () => {
 
     const tempUsers = [...users];
 
-    // First preserve the input value that was just typed
+    
     tempUsers[index][`work_order_sub_${field}`] = value;
 
     const parts = newValue.ratio_type.split(",");

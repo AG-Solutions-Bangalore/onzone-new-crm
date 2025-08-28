@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import moment from "moment";
-import { ChevronLeft, Barcode } from "lucide-react";
+import { ChevronLeft, Barcode, Printer } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,40 +17,78 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
+import BASE_URL from "@/config/BaseUrl";
+import axios from "axios";
+import { ErrorComponent, LoaderComponent } from "@/components/LoaderComponent/LoaderComponent";
+import ReactToPrint, { useReactToPrint } from "react-to-print";
 
 const OrderFormView = () => {
+  const {id} = useParams()
   const { toast } = useToast();
   const navigate = useNavigate();
-  const location = useLocation();
-  const [orderData, setOrderData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+   const orderRef = useRef(null);
 
-  useEffect(() => {
-    if (location.state && location.state.orderData) {
-      setOrderData(location.state.orderData);
-      setIsLoading(false);
-    } else {
-      toast({
-        title: "No Order Data",
-        description: "No order data found. Please create an order first.",
-        variant: "destructive",
-      });
-      navigate("/order-form");
+  const {
+    data: orderformdata,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ["orderformdata", id],
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `${BASE_URL}/api/fetch-order-form-by-id/${id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      return response.data;
+    },
+  });
+  const OrderPrint = useReactToPrint({
+    content: () => orderRef.current,
+    documentTitle: "order-report",
+    pageStyle: `
+      @page {
+      size: auto;
+ margin: 3mm 3mm 3mm 3mm;
+        border: 0px solid black;
+      
     }
-  }, [location, navigate, toast]);
+    @media print {
+      body {
+        border: 0px solid red;
+        margin: 1mm;
+        padding: 1mm 1mm 1mm 1mm;
+        min-height: 100vh;
+      }
+      .print-hide {
+        display: none;
+      }
+     
+    }
+    `,
+  });
+  
+  const totalItems = orderformdata?.orderSub?.reduce((sum, item) => sum + parseFloat(item.order_sub_quantity), 0) || 0;
+  const uniqueItems = orderformdata?.orderSub?.length || 0;
+
 
   if (isLoading) {
-    return (
-      <Page>
-        <div className="flex justify-center items-center h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      </Page>
-    );
+    return <LoaderComponent name="Order View Form Data" />;
   }
 
-  const totalItems = orderData.items.reduce((sum, item) => sum + item.quantity, 0);
-  const uniqueItems = orderData.items.length;
+
+  if (isError) {
+    return (
+      <ErrorComponent
+        message="Error Fetching Order View Form Data"
+        refetch={refetch}
+      />
+    );
+  }
 
   return (
     <Page>
@@ -70,12 +108,21 @@ const OrderFormView = () => {
                     Order Details
                   </h1>
                 </div>
+               
+              <button
+              onClick={OrderPrint}
+                className={`sm:w-auto bg-blue-600 hover:bg-blue-700 text-white text-sm p-3 rounded-b-md`}
+              >
+                <Printer className="h-4 w-4" />
+              </button>
+          
+        
               </div>
             </div>
           </div>
 
-          {orderData && (
-            <div className="p-2">
+          {orderformdata && (
+            <div className="p-2" >
               <div className="text-center font-semibold text-sm mb-2">
                 ORDER FORM
               </div>
@@ -84,25 +131,25 @@ const OrderFormView = () => {
                 <div className="flex justify-center border p-1">
                   <span className="font-medium">Date:</span>{" "}
                   <span className="ml-1">
-                    {moment(orderData.order_form_date).format("DD-MMM-YYYY")}
+                    {moment(orderformdata.data.order_date).format("DD-MMM-YYYY")}
                   </span>
                 </div>
                 <div className="flex justify-center border p-1">
-                  <span className="font-medium">Reference No:</span>{" "}
+                  <span className="font-medium">Ref No:</span>{" "}
                   <span className="ml-1">
-                    {orderData.order_form_ref || 'N/A'}
+                    {orderformdata.data.order_ref || 'N/A'}
                   </span>
                 </div>
               </div>
 
               <div className="border p-2 text-xs mb-3">
                 <span className="font-semibold">Retailer:</span>{" "}
-                <span>{orderData.order_form_retailer || 'Not specified'}</span>
+                <span>{orderformdata.data.order_retailer || 'Not specified'}</span>
               </div>
 
               <div className="border p-2 text-xs mb-3">
                 <span className="font-semibold">Remarks:</span>{" "}
-                <span>{orderData.order_form_remark || 'Not specified'}</span>
+                <span>{orderformdata.data.order_remarks || 'Not specified'}</span>
               </div>
 
               <table className="w-full border-collapse text-xs mb-3">
@@ -114,28 +161,26 @@ const OrderFormView = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {orderData.items.map((item, index) => (
+                  {orderformdata.orderSub.map((item, index) => (
                     <tr
-                      key={index}
+                      key={item.id}
                       className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
                     >
                       <td className="border p-1 text-left">{index + 1}</td>
                       <td className="border p-1 text-left">
                         <div className="flex items-center">
-                        
-                          {item.barcode}
+                          {item.order_sub_barcode}
                         </div>
                       </td>
-                      <td className="border p-1 text-right">{item.quantity}</td>
+                      <td className="border p-1 text-right">{item.order_sub_quantity}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
 
-              {/* Summary Table */}
+           
               <table className="w-full border-collapse text-xs">
                 <tbody>
-                
                   <tr className="font-bold">
                     <td className="border p-1 text-right">Total Sets</td>
                     <td className="border p-1 text-right">{uniqueItems}</td>
@@ -165,11 +210,19 @@ const OrderFormView = () => {
                   </Button>
                   <CardTitle className="text-xl">Order Details</CardTitle>
                 </div>
+             
+                                    <Button
+                                    onClick={OrderPrint}
+                                    variant="outline" size="sm">
+                                      <Printer className="mr-2 h-4 w-4" />
+                                      Print
+                                    </Button>
+                                
               </div>
             </CardHeader>
 
             <CardContent>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" ref={orderRef}>
                 <div className="text-center border-l border-t border-r p-4 space-y-1">
                   <h3 className="text-2xl font-semibold">ORDER FORM</h3>
                 </div>
@@ -178,31 +231,31 @@ const OrderFormView = () => {
                   <div className="flex items-center justify-center border-r border-gray-300 py-2 px-3">
                     <span className="font-medium">Date:</span>
                     <span className="ml-1">
-                      {moment(orderData.order_form_date).format("DD-MMM-YYYY")}
+                      {moment(orderformdata.data.order_date).format("DD-MMM-YYYY")}
                     </span>
                   </div>
                   <div className="flex items-center justify-center py-2 px-3">
-                    <span className="font-medium">Reference No:</span>
+                    <span className="font-medium">Ref No:</span>
                     <span className="ml-1">
-                      {orderData.order_form_ref || 'N/A'}
+                      {orderformdata.data.order_ref || 'N/A'}
                     </span>
                   </div>
                 </div>
 
                 <div className="border-l border-r p-2">
                   <span className="font-semibold">Retailer:</span>{" "}
-                  <span>{orderData.order_form_retailer || 'Not specified'}</span>
+                  <span>{orderformdata.data.order_retailer || 'Not specified'}</span>
                 </div>
 
                 <div className="border-l border-r p-2">
                   <span className="font-semibold">Remarks:</span>{" "}
-                  <span>{orderData.order_form_remark || 'Not specified'}</span>
+                  <span>{orderformdata.data.order_remarks || 'Not specified'}</span>
                 </div>
 
                 <Table className="border">
                   <TableHeader>
                     <TableRow className="bg-gray-100 hover:bg-gray-100">
-                      <TableHead className="text-center text-black font-bold border-r">
+                      <TableHead className="text-center  text-black font-bold border-r">
                         Sl No
                       </TableHead>
                       <TableHead className="text-center text-black font-bold border-r">
@@ -214,9 +267,9 @@ const OrderFormView = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {orderData.items.map((item, index) => (
+                    {orderformdata.orderSub.map((item, index) => (
                       <TableRow
-                        key={index}
+                        key={item.id}
                         className={index % 2 === 0 ? "bg-white" : "bg-white "}
                       >
                         <TableCell className="text-center border-r">
@@ -224,18 +277,16 @@ const OrderFormView = () => {
                         </TableCell>
                         <TableCell className="text-center border-r">
                           <div className="flex items-center justify-center">
-                         
-                            {item.barcode}
+                            {item.order_sub_barcode}
                           </div>
                         </TableCell>
                         <TableCell className="text-center">
-                          {item.quantity}
+                          {item.order_sub_quantity}
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                   <TableFooter>
-                   
                     <TableRow className="font-bold">
                       <TableCell
                         colSpan={2}

@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from "react";
-import Page from "../dashboard/page";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { getTodayDate } from "@/utils/currentDate";
@@ -59,7 +58,7 @@ const formSchema = z.object({
 
 });
 
-const CreateOrderForm = () => {
+const PublicCreateOrderForm = () => {
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -73,7 +72,7 @@ const CreateOrderForm = () => {
   const mobileBarcodeInputRef = useRef(null);
   const quantityInputRef = useRef(null);
   const navigate = useNavigate();
- 
+  const [isMobile, setIsMobile] = useState(false);
   const [highlightedItem, setHighlightedItem] = useState(null);
   const [showScanner, setShowScanner] = useState(false);
   useEffect(() => {
@@ -88,7 +87,14 @@ const CreateOrderForm = () => {
       }, 100);
     }
   }, [barcodeModalOpen]);
-
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -130,6 +136,8 @@ const CreateOrderForm = () => {
     }
   };
 
+ 
+  
   const addItem = () => {
     setItems([...items, { id: Date.now(), barcode: "", quantity: 0 }]);
   };
@@ -147,73 +155,31 @@ const CreateOrderForm = () => {
   const handleBarcodeScan = (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
-
       const barcode = e.target.value.trim();
       if (barcode) {
+ 
+        const emptyItem = items.find((item) => !item.barcode);
+        if (emptyItem) {
+          setCurrentBarcode(barcode);
+          setQuantity(emptyItem.quantity);
+          setBarcodeModalOpen(true);
+          e.target.value = "";
+          return;
+        }
+
         setCurrentBarcode(barcode);
-
         const existingItem = items.find((item) => item.barcode === barcode);
-
         if (existingItem) {
           setQuantity(existingItem.quantity);
         } else {
           setQuantity(0);
         }
-
         setBarcodeModalOpen(true);
-
         e.target.value = "";
       }
     }
   };
 
-  // const handleQuantitySubmit = () => {
-  //   if (!currentBarcode || quantity <= 0) {
-  //     toast({
-  //       title: "Invalid Input",
-  //       description: "Please enter a valid barcode and quantity",
-  //       variant: "destructive",
-  //     });
-  //     return;
-  //   }
-
-  //   const existingItemIndex = items.findIndex(
-  //     (item) => item.barcode === currentBarcode
-  //   );
-
-  //   if (existingItemIndex >= 0) {
-  //     const updatedItems = [...items];
-  //     updatedItems[existingItemIndex].quantity = quantity;
-  //     setItems(updatedItems);
-
-  //     toast({
-  //       title: "Quantity Updated",
-  //       description: `Updated quantity for barcode: ${currentBarcode}`,
-  //     });
-  //   } else {
-  //     setItems([
-  //       ...items,
-  //       { id: Date.now(), barcode: currentBarcode, quantity },
-  //     ]);
-
-  //     toast({
-  //       title: "Item Added",
-  //       description: `Added new item with barcode: ${currentBarcode}`,
-  //     });
-  //   }
-
-  //   setBarcodeModalOpen(false);
-  //   setCurrentBarcode("");
-  //   setQuantity(0);
-
-  //   if (barcodeInputRef.current) {
-  //     setTimeout(() => {
-  //       barcodeInputRef.current.focus();
-  //     }, 100);
-  //   }
-  // };
-
-  
   
   const handleQuantitySubmit = () => {
     if (!currentBarcode || quantity <= 0) {
@@ -225,33 +191,43 @@ const CreateOrderForm = () => {
       return;
     }
   
-    const existingItemIndex = items.findIndex(
-      (item) => item.barcode === currentBarcode
-    );
-  
+    const emptyItem = items.find((item) => !item.barcode);
     let newItemId;
-    
-    if (existingItemIndex >= 0) {
-      const updatedItems = [...items];
-      updatedItems[existingItemIndex].quantity = quantity;
-      setItems(updatedItems);
-      newItemId = updatedItems[existingItemIndex].id;
   
+    if (emptyItem) {
+      const updatedItems = items.map((item) =>
+        item.id === emptyItem.id ? { ...item, barcode: currentBarcode, quantity } : item
+      );
+      setItems(updatedItems);
+      newItemId = emptyItem.id;
       toast({
-        title: "Quantity Updated",
-        description: `Updated quantity for barcode: ${currentBarcode}`,
+        title: "Item Updated",
+        description: `Updated empty item with barcode: ${currentBarcode}`,
       });
     } else {
-      const newItem = { id: Date.now(), barcode: currentBarcode, quantity };
-      setItems([...items, newItem]);
-      newItemId = newItem.id;
+      const existingItemIndex = items.findIndex(
+        (item) => item.barcode === currentBarcode
+      );
   
-      toast({
-        title: "Item Added",
-        description: `Added new item with barcode: ${currentBarcode}`,
-      });
+      if (existingItemIndex >= 0) {
+        const updatedItems = [...items];
+        updatedItems[existingItemIndex].quantity = quantity;
+        setItems(updatedItems);
+        newItemId = updatedItems[existingItemIndex].id;
+        toast({
+          title: "Quantity Updated",
+          description: `Updated quantity for barcode: ${currentBarcode}`,
+        });
+      } else {
+        const newItem = { id: Date.now(), barcode: currentBarcode, quantity };
+        setItems([newItem, ...items]);
+        newItemId = newItem.id;
+        toast({
+          title: "Item Added",
+          description: `Added new item with barcode: ${currentBarcode}`,
+        });
+      }
     }
-  
   
     setHighlightedItem(newItemId);
     setTimeout(() => {
@@ -269,31 +245,22 @@ const CreateOrderForm = () => {
     }
   };
 
-  // const handleBarcodeScanMobile = (result) => {
-  //   if (result) {
-  //     setCurrentBarcode(result);
-
-  //     const existingItem = items.find((item) => item.barcode === result);
-
-  //     if (existingItem) {
-  //       setQuantity(existingItem.quantity);
-  //     } else {
-  //       setQuantity(0);
-  //     }
-
-  //     setBarcodeModalOpen(true);
-  //     setShowScanner(false);
-  //   }
-  // };
   const handleBarcodeScanMobile = (result) => {
     if (result) {
+ 
+      const emptyItem = items.find((item) => !item.barcode);
+      if (emptyItem) {
+        setCurrentBarcode(result);
+        setQuantity(emptyItem.quantity);
+        setBarcodeModalOpen(true);
+        setShowScanner(false);
+        return;
+      }
+   
       setCurrentBarcode(result);
-  
       const existingItem = items.find((item) => item.barcode === result);
-  
       if (existingItem) {
         setQuantity(existingItem.quantity);
-   
         setHighlightedItem(existingItem.id);
         setTimeout(() => {
           setHighlightedItem(null);
@@ -301,7 +268,6 @@ const CreateOrderForm = () => {
       } else {
         setQuantity(0);
       }
-  
       setBarcodeModalOpen(true);
       setShowScanner(false);
     }
@@ -378,7 +344,9 @@ const CreateOrderForm = () => {
         description: data.msg || 'Order created successfully',
         variant: "default",
       });
-      navigate(`/order-form/view-order-form/${data.latest_id}`); 
+      setShowResults(false)
+      setSearchParams(null);
+      setItems([]);
    
     },
     onError: (error) => {
@@ -393,6 +361,15 @@ const CreateOrderForm = () => {
   
 
   const handleSubmitOrder = () => {
+    const emptySkuItem = items.find((item) => !item.barcode);
+    if (emptySkuItem) {
+      toast({
+        title: "Empty SKU",
+        description: "Please fill all SKU fields before submitting",
+        variant: "destructive",
+      });
+      return;
+    }
     if (items.length === 0) {
       toast({
         title: "No Items",
@@ -402,20 +379,17 @@ const CreateOrderForm = () => {
       return;
     }
   
-   
-    const orderItems = items.map(item => ({
+    const orderItems = items.map((item) => ({
       order_sub_barcode: item.barcode,
-      order_sub_quantity: item.quantity
+      order_sub_quantity: item.quantity,
     }));
   
     const orderData = {
       ...form.getValues(),
-      order_data: orderItems
+      order_data: orderItems,
     };
   
-    
     try {
-
       submitOrderMutation.mutate(orderData);
     } catch (error) {
       toast({
@@ -425,6 +399,7 @@ const CreateOrderForm = () => {
       });
     }
   };
+  
   const handleBackToForm = () => {
     setShowResults(false);
     
@@ -438,7 +413,7 @@ const CreateOrderForm = () => {
   const uniqueItems = items.length;
 
   return (
-    <Page>
+    <>
       <div className="w-full p-0 md:p-0">
         
 
@@ -453,7 +428,7 @@ const CreateOrderForm = () => {
                   <Button
                       variant="outline"
                       size="sm"
-                      onClick={()=>navigate('/order-form')}
+                      onClick={()=>navigate('/')}
                       className="mr-3"
                     >
                       <ArrowLeft className="h-4 w-4" />
@@ -626,7 +601,7 @@ const CreateOrderForm = () => {
 </div>
 </div>
 
-            <div className="mb-14">
+            <div className="mb-1 border-2  p-2">
               
 
               <div className="flex justify-between items-center mb-2">
@@ -644,8 +619,8 @@ const CreateOrderForm = () => {
 
               {items.length > 0 ? (
                 <>
-                <div className="space-y-2  overflow-y-auto h-80">
-                  {items.map((item, index) => (
+                <div className="space-y-2  overflow-y-auto h-96">
+                  {items.slice().reverse().map((item, index) => (
                     <div
                     key={item.id}
                     id={`item-${item.id}`}
@@ -655,7 +630,7 @@ const CreateOrderForm = () => {
                     >
                       <div className="grid grid-cols-12 gap-1 items-center">
                         <div className="col-span-1 text-xs text-gray-500 text-center">
-                          {index + 1}
+                        {items.length - index}
                         </div>
                         <div className="col-span-7">
                           <Input
@@ -906,13 +881,15 @@ const CreateOrderForm = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map((item, index) => (
+              {items.slice().reverse().map((item, index) => (
                 <TableRow  key={item.id} 
                 id={`item-${item.id}`}
                 className={`h-10  transition-colors duration-200 ${
                   highlightedItem === item.id ? ' bg-red-300' : ''
                 }`}>
-                  <TableCell className="py-1 text-xs text-center">{index + 1}</TableCell>
+                 <TableCell className="py-1 text-xs text-center">
+      {items.length - index}
+    </TableCell>
                   <TableCell className="py-1">
                     <Input
                       value={item.barcode}
@@ -1005,7 +982,7 @@ const CreateOrderForm = () => {
                 value={quantity}
                 onChange={(e) => handleQuantityChange(e.target.value)}
                 className="w-24 h-12 text-center text-xl"
-                readOnly={true}
+                readOnly={isMobile}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     handleQuantitySubmit();
@@ -1139,9 +1116,8 @@ const CreateOrderForm = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Page>
+    </>
   );
 };
 
-export default CreateOrderForm;
-//
+export default PublicCreateOrderForm;
