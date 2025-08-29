@@ -24,43 +24,13 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar";
-// import { NavMainUser } from "./nav-main-user";
 
-// const isItemAllowed = (item, pageControl, userId) => {
-//   const itemUrl = item.url?.replace(/^\//, "");
-//   return pageControl.some(
-//     (control) =>
-//       control.page === item.title &&
-//       control.url === itemUrl &&
-//       control.userIds.includes(userId) &&
-//       control.status === "Active"
-//   );
-// };
-
-// const filterMenuItems = (items, pageControl, userId) => {
-//   if (!items) return [];
-
-//   return items.reduce((acc, item) => {
-//     if (item.items) {
-//       const filteredItems = filterMenuItems(item.items, pageControl, userId);
-//       if (filteredItems.length > 0) {
-//         acc.push({
-//           ...item,
-//           items: filteredItems,
-//         });
-//       }
-//     } else if (isItemAllowed(item, pageControl, userId)) {
-//       acc.push(item);
-//     }
-//     return acc;
-//   }, []);
-// };
 
 export function AppSidebar({ ...props }) {
   const nameL = localStorage.getItem("name");
   const emailL = localStorage.getItem("email");
-  // const userId = localStorage.getItem("id");
-  // const pageControl = JSON.parse(localStorage.getItem("pageControl")) || [];
+  const userType = localStorage.getItem("userType");
+
 
   const initialData = {
     user: {
@@ -166,74 +136,7 @@ export function AppSidebar({ ...props }) {
         isActive: false,
       },
 
-      // {
-      //   title: "Purchase",
-      //   url: "#",
-      //   icon: TicketPlus,
-      //   isActive: false,
-      //   items: [
-      //     {
-      //       title: "Purchase Order",
-      //       url: "/purchase-order",
-      //     },
-      //     {
-      //       title: "Purchase",
-      //       url: "/purchase/market-purchase",
-      //     },
-      //     {
-      //       title: "Production",
-      //       url: "/purchase/market-production",
-      //     },
-      //     {
-      //       title: "Processing",
-      //       url: "/purchase/market-processing",
-      //     },
-      //     {
-      //       title: "Dispatch",
-      //       url: "/purchase/market-dispatch",
-      //     },
-      //     {
-      //       title: "Stock",
-      //       url: "/purchase/stock",
-      //     },
-      //   ],
-      // },
-      // {
-      //   title: "Payment",
-      //   url: "#",
-      //   icon: BadgeIndianRupee,
-      //   isActive: false,
-      //   items: [
-      //     {
-      //       title: "PaymentList",
-      //       url: "/payment-payment-list",
-      //     },
-      //     {
-      //       title: "PaymentPending",
-      //       url: "/payment-payment-pending",
-      //     },
-      //     {
-      //       title: "PaymentClose",
-      //       url: "/payment-payment-close",
-      //     },
-      //   ],
-      // },
-      // {
-      //   title: "Duty DrawBack",
-      //   url: "#",
-      //   icon: ReceiptText,
-      //   isActive: false,
-      //   items: [
-      //     {
-      //       title: "Pending",
-      //       url: "/dutydrawback/pending",
-      //     },
-      //     {
-      //       title: "Received",
-      //       url: "/dutydrawback/received",
-      //     },
-      //   ],
-      // },
+    
       {
         title: "Reports",
         url: "#",
@@ -259,55 +162,25 @@ export function AppSidebar({ ...props }) {
           
         ],
       },
-      // {
-      //   title: "Costing",
-      //   url: "/costing",
-      //   icon: NotebookText,
-      //   isActive: false,
-      // },
+   
     ],
 
-    // userManagement: [
-    //   {
-    //     name: "User Management",
-    //     url: "/userManagement",
-    //     icon: Frame,
-    //   },
-    //   {
-    //     name: "UserType",
-    //     url: "/user-type",
-    //     icon: Settings,
-    //   },
-    // ],
   };
 
-  // Filter menu items based on user permissions
-  // const filteredNavMain = filterMenuItems(
-  //   initialData.navMain,
-  //   pageControl,
-  //   userId
-  // );
- 
-  // const filteredUserManagement = filterMenuItems(
-  //   initialData.userManagement.map((p) => ({
-  //     title: p.name,
-  //     url: p.url,
-  //   })),
-  //   pageControl,
-  //   userId
-  // ).map((p) => ({
-  //   name: p.title,
-  //   url: p.url,
-  //   icon:
-  //     initialData.userManagement.find((orig) => orig.name === p.title)?.icon ||
-  //     Frame,
-  // }));
 
   const data = {
     ...initialData,
-    navMain: initialData.navMain,
-    // projects: filteredProjects,
-    // userManagement: initialData.userManagement,
+    navMain:
+      userType === "4"
+        ? [
+            {
+              title: "Work Order",
+              url: "/work-order",
+              icon: Blocks,
+              isActive: false,
+            },
+          ]
+        : initialData.navMain,
   };
 
   return (
@@ -316,9 +189,9 @@ export function AppSidebar({ ...props }) {
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent className="sidebar-content">
-        {/* <NavProjects projects={data.projects} /> */}
+       
         <NavMain items={data.navMain} />
-        {/* <NavMainUser projects={data.userManagement} /> */}
+ 
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
