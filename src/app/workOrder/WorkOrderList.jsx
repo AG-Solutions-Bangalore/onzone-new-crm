@@ -75,7 +75,7 @@ const WorkOrderList = () => {
    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [deleteWorkOrderId, setDeleteWorkOrderId] = useState(null);
     const [downloadLoadingId, setDownloadLoadingId] = useState(null);
-   
+    const userType = localStorage.getItem("userType");
     const {
       data: workorder,
       isLoading,
@@ -333,7 +333,7 @@ const WorkOrderList = () => {
               </TooltipProvider>
          
               
-  {deleteReceive === 0 && (
+  {(deleteReceive === 0 && userType != '4') && (
 
 <TooltipProvider>
 <Tooltip>

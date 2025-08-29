@@ -89,7 +89,14 @@ export default function LoginAuth() {
        
 
         console.log("✅ Login successful! Redirecting to /home...");
-        navigate("/home");
+        switch (UserInfo.user.user_type_id) {
+          case 4:
+            navigate("/work-order");
+            break;
+          default:
+            navigate("/home");
+            break;
+        }
       } else {
         console.warn("⚠️ Unexpected API response:", res);
         toast.error("Login Failed: Unexpected response.");
