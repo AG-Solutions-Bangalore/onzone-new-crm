@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Send, ArrowLeft, Package, Calendar, Factory, ChevronLeft } from "lucide-react";
+import { Send, ArrowLeft, Package, Calendar, Factory, ChevronLeft, Minus } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import * as z from "zod";
 
@@ -17,11 +17,12 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 
 import axios from "axios";
 import BASE_URL from "@/config/BaseUrl";
 
-import { useToast } from "@/hooks/use-toast";
 import { LoaderComponent, ErrorComponent } from "@/components/LoaderComponent/LoaderComponent";
 import Page from "../dashboard/page";
 
@@ -77,6 +78,7 @@ const EditOrderReceived = () => {
 
   const [users, setUsers] = useState([useTemplate]);
   const [isInitialDataLoaded, setIsInitialDataLoaded] = useState(false);
+  const [highlightedItem, setHighlightedItem] = useState(null);
 
   // Fetch work order received data
   const {
@@ -164,6 +166,8 @@ const EditOrderReceived = () => {
     );
   };
 
+ 
+
   // Update mutation
   const updateOrderReceivedMutation = useMutation({
     mutationFn: async (data) => {
@@ -240,6 +244,10 @@ const EditOrderReceived = () => {
           </div>
         ),
       });
+      const firstError = validation.error.errors[0];
+      if (firstError.path[0] === "workorder_sub_rc_data") {
+        setHighlightedItem(firstError.path[1]); 
+      }
       return;
     }
 
@@ -261,288 +269,303 @@ const EditOrderReceived = () => {
 
   return (
     <Page>
-     <div className="max-w-full mx-auto">
-            <Card className="shadow-lg">
-              <CardHeader className="border-b">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-semibold">
-                  Update Work Order Receive
-                  </CardTitle>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to="/order-received" className="flex items-center gap-2">
-                      <ChevronLeft className="h-4 w-4" />
-                      Back
-                    </Link>
-                  </Button>
+      <div className="max-w-full mx-auto">
+        <Card className="shadow-lg">
+          <CardHeader className="border-b">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-semibold">
+                Update Work Order Receive
+              </CardTitle>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/order-received" className="flex items-center gap-2">
+                  <ChevronLeft className="h-4 w-4" />
+                  Back
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-4">
+            <form className="space-y-2">
+              {/* Basic Information Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="work_order_rc_factory_no">Factory</Label>
+                  <Input
+                    id="work_order_rc_factory_no"
+                    name="work_order_rc_factory_no"
+                    value={workorder.work_order_rc_factory_no}
+                    onChange={onInputChange}
+                    disabled
+                    className="bg-gray-50"
+                  />
                 </div>
-              </CardHeader>
-    
-              <CardContent className="p-4">
-                 <form  className="space-y-2">
-                              {/* Basic Information Grid */}
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                <div className="space-y-1">
-                                  <Label htmlFor="work_order_rc_factory_no">Factory</Label>
-                                  <Input
-                                    id="work_order_rc_factory_no"
-                                    name="work_order_rc_factory_no"
-                                    value={workorder.work_order_rc_factory_no}
-                                    onChange={onInputChange}
-                                    disabled
-                                    className="bg-gray-50"
-                                  />
-                                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="work_order_rc_id">Work Order ID</Label>
+                  <Input
+                    id="work_order_rc_id"
+                    name="work_order_rc_id"
+                    value={workorder.work_order_rc_id}
+                    onChange={onInputChange}
+                    disabled
+                    className="bg-gray-50"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="work_order_rc_date">
+                    <Calendar className="w-4 h-4 inline mr-1" />
+                    Receive Date
+                  </Label>
+                  <Input
+                    id="work_order_rc_date"
+                    type="date"
+                    name="work_order_rc_date"
+                    value={workorder.work_order_rc_date}
+                    onChange={onInputChange}
+                    disabled
+                    className="bg-gray-50"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="work_order_rc_dc_no">DC No</Label>
+                  <Input
+                    id="work_order_rc_dc_no"
+                    name="work_order_rc_dc_no"
+                    value={workorder.work_order_rc_dc_no}
+                    onChange={onInputChange}
+                    disabled
+                    className="bg-gray-50"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="work_order_rc_dc_date">
+                    <Calendar className="w-4 h-4 inline mr-1" />
+                    DC Date
+                  </Label>
+                  <Input
+                    id="work_order_rc_dc_date"
+                    type="date"
+                    name="work_order_rc_dc_date"
+                    value={workorder.work_order_rc_dc_date}
+                    onChange={onInputChange}
+                    disabled
+                    className="bg-gray-50"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="work_order_rc_brand">Brand</Label>
+                  <Input
+                    id="work_order_rc_brand"
+                    name="work_order_rc_brand"
+                    value={workorder.work_order_rc_brand}
+                    onChange={onInputChange}
+                    disabled
+                    className="bg-gray-50"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="work_order_rc_box">
+                    No of Box <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="work_order_rc_box"
+                    name="work_order_rc_box"
+                    value={workorder.work_order_rc_box}
+                    onChange={onInputChange}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="work_order_rc_pcs">
+                    Total No of Pcs <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="work_order_rc_pcs"
+                    name="work_order_rc_pcs"
+                    value={workorder.work_order_rc_pcs}
+                    onChange={onInputChange}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="work_order_rc_fabric_received">
+                    Fabric Received <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    name="work_order_rc_fabric_received"
+                    value={workorder.work_order_rc_fabric_received}
+                    onValueChange={(value) =>
+                      setWorkOrderReceive(prev => ({
+                        ...prev,
+                        work_order_rc_fabric_received: value
+                      }))
+                    }
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select option" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {work_receive.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {workorder.work_order_rc_fabric_received === "Yes" && (
+                  <div className="space-y-1">
+                    <Label htmlFor="work_order_rc_received_by">Fabric Received By</Label>
+                    <Input
+                      id="work_order_rc_received_by"
+                      name="work_order_rc_received_by"
+                      value={workorder.work_order_rc_received_by}
+                      onChange={onInputChange}
+                    />
+                  </div>
+                )}
+
+                <div className={`space-y-1 ${
+                  workorder.work_order_rc_fabric_received === "Yes"
+                    ? "xl:col-span-2"
+                    : "xl:col-span-1"
+                }`}>
+                  <Label htmlFor="work_order_rc_fabric_count">Fabric Left Over</Label>
+                  <Input
+                    id="work_order_rc_fabric_count"
+                    name="work_order_rc_fabric_count"
+                    value={workorder.work_order_rc_fabric_count}
+                    onChange={onInputChange}
+                  />
+                </div>
+
+                <div className={`space-y-1 ${
+                  workorder.work_order_rc_fabric_received === "Yes"
+                    ? "xl:col-span-4"
+                    : "xl:col-span-2"
+                }`}>
+                  <Label htmlFor="work_order_rc_remarks">Remarks</Label>
+                  <Textarea
+                    id="work_order_rc_remarks"
+                    name="work_order_rc_remarks"
+                    value={workorder.work_order_rc_remarks}
+                    onChange={onInputChange}
+                    className="min-h-[80px]"
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Sub Items Section - Compact Version */}
+              <div className="space-y-1">
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="font-semibold text-lg">Item Details</h4>
+                  <Badge variant="outline" className="text-xs">
+                    {users.length} items
+                  </Badge>
+                </div>
                 
-                                <div className="space-y-1">
-                                  <Label htmlFor="work_order_rc_id">Work Order ID</Label>
-                                  <Input
-                                    id="work_order_rc_id"
-                                    name="work_order_rc_id"
-                                    value={workorder.work_order_rc_id}
-                                    onChange={onInputChange}
-                                    disabled
-                                    className="bg-gray-50"
-                                  />
-                                </div>
-                
-                                <div className="space-y-1">
-                                  <Label htmlFor="work_order_rc_date">
-                                    <Calendar className="w-4 h-4 inline mr-1" />
-                                    Receive Date
-                                  </Label>
-                                  <Input
-                                    id="work_order_rc_date"
-                                    type="date"
-                                    name="work_order_rc_date"
-                                    value={workorder.work_order_rc_date}
-                                    onChange={onInputChange}
-                                    disabled
-                                    className="bg-gray-50"
-                                  />
-                                </div>
-                
-                                <div className="space-y-1">
-                                  <Label htmlFor="work_order_rc_dc_no">DC No</Label>
-                                  <Input
-                                    id="work_order_rc_dc_no"
-                                    name="work_order_rc_dc_no"
-                                    value={workorder.work_order_rc_dc_no}
-                                    onChange={onInputChange}
-                                    disabled
-                                    className="bg-gray-50"
-                                  />
-                                </div>
-                
-                                <div className="space-y-1">
-                                  <Label htmlFor="work_order_rc_dc_date">
-                                    <Calendar className="w-4 h-4 inline mr-1" />
-                                    DC Date
-                                  </Label>
-                                  <Input
-                                    id="work_order_rc_dc_date"
-                                    type="date"
-                                    name="work_order_rc_dc_date"
-                                    value={workorder.work_order_rc_dc_date}
-                                    onChange={onInputChange}
-                                    disabled
-                                    className="bg-gray-50"
-                                  />
-                                </div>
-                
-                                <div className="space-y-1">
-                                  <Label htmlFor="work_order_rc_brand">Brand</Label>
-                                  <Input
-                                    id="work_order_rc_brand"
-                                    name="work_order_rc_brand"
-                                    value={workorder.work_order_rc_brand}
-                                    onChange={onInputChange}
-                                    disabled
-                                    className="bg-gray-50"
-                                  />
-                                </div>
-                
-                                <div className="space-y-1">
-                                  <Label htmlFor="work_order_rc_box">
-                                    No of Box <span className="text-red-500">*</span>
-                                  </Label>
-                                  <Input
-                                    id="work_order_rc_box"
-                                    name="work_order_rc_box"
-                                    value={workorder.work_order_rc_box}
-                                    onChange={onInputChange}
-                                    required
-                                  />
-                                </div>
-                
-                                <div className="space-y-1">
-                                  <Label htmlFor="work_order_rc_pcs">
-                                    Total No of Pcs <span className="text-red-500">*</span>
-                                  </Label>
-                                  <Input
-                                    id="work_order_rc_pcs"
-                                    name="work_order_rc_pcs"
-                                    value={workorder.work_order_rc_pcs}
-                                    onChange={onInputChange}
-                                    required
-                                  />
-                                </div>
-                
-                                <div className="space-y-1">
-                                  <Label htmlFor="work_order_rc_fabric_received">
-                                    Fabric Received <span className="text-red-500">*</span>
-                                  </Label>
-                                  <Select
-                                    name="work_order_rc_fabric_received"
-                                    value={workorder.work_order_rc_fabric_received}
-                                    onValueChange={(value) =>
-                                      setWorkOrderReceive(prev => ({
-                                        ...prev,
-                                        work_order_rc_fabric_received: value
-                                      }))
-                                    }
-                                    required
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select option" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {work_receive.map((option) => (
-                                        <SelectItem key={option.value} value={option.value}>
-                                          {option.label}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                
-                                {workorder.work_order_rc_fabric_received === "Yes" && (
-                                  <div className="space-y-1">
-                                    <Label htmlFor="work_order_rc_received_by">Fabric Received By</Label>
-                                    <Input
-                                      id="work_order_rc_received_by"
-                                      name="work_order_rc_received_by"
-                                      value={workorder.work_order_rc_received_by}
-                                      onChange={onInputChange}
-                                    />
-                                  </div>
-                                )}
-                
-                                <div className={`space-y-1 ${
-                                  workorder.work_order_rc_fabric_received === "Yes"
-                                    ? "xl:col-span-2"
-                                    : "xl:col-span-1"
-                                }`}>
-                                  <Label htmlFor="work_order_rc_fabric_count">Fabric Left Over</Label>
-                                  <Input
-                                    id="work_order_rc_fabric_count"
-                                    name="work_order_rc_fabric_count"
-                                    value={workorder.work_order_rc_fabric_count}
-                                    onChange={onInputChange}
-                                  />
-                                </div>
-                
-                                <div className={`space-y-1 ${
-                                  workorder.work_order_rc_fabric_received === "Yes"
-                                    ? "xl:col-span-4"
-                                    : "xl:col-span-2"
-                                }`}>
-                                  <Label htmlFor="work_order_rc_remarks">Remarks</Label>
-                                  <Textarea
-                                    id="work_order_rc_remarks"
-                                    name="work_order_rc_remarks"
-                                    value={workorder.work_order_rc_remarks}
-                                    onChange={onInputChange}
-                                    className="min-h-[80px]"
-                                  />
-                                </div>
-                              </div>
-                
-                              <Separator />
-                
-                              {/* Sub Items Section */}
-                              <div className="space-y-1">
-                                <h4 className="font-semibold text-lg">Item Details</h4>
-                                <div className="grid gap-4">
-                                  {users.map((user, index) => (
-                                    <div key={index} className="border-l-4 border-l-blue-500 px-2">
-                                     
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                          <Input
-                                            type="hidden"
-                                            name="id"
-                                            value={user.id}
-                                            onChange={(e) => onChange(e, index)}
-                                          />
-                                          
-                                          <div className="space-y-1">
-                                            <Label htmlFor={`box_${index}`}>
-                                              Box <span className="text-red-500">*</span>
-                                            </Label>
-                                            <Input
-                                              id={`box_${index}`}
-                                              name="work_order_rc_sub_box"
-                                              value={user.work_order_rc_sub_box}
-                                              onChange={(e) => onChange(e, index)}
-                                              required
-                                            />
-                                          </div>
-                
-                                          <div className="space-y-1">
-                                            <Label htmlFor={`tcode_${index}`}>
-                                              T Code <span className="text-red-500">*</span>
-                                            </Label>
-                                            <Input
-                                              id={`tcode_${index}`}
-                                              name="work_order_rc_sub_barcode"
-                                              value={user.work_order_rc_sub_barcode}
-                                              onChange={(e) => onChange(e, index)}
-                                              required
-                                            />
-                                          </div>
-                                        </div>
-                                    
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                
-                              <Separator />
-                
-                              {/* Action Buttons */}
-                              <div className="flex flex-col sm:flex-row justify-center gap-4">
-                                {/* <Button
-                                  type="button"
-                                  variant="outline"
-                                  onClick={() => navigate("/work-order-receive")}
-                                  className="flex items-center gap-2"
-                                >
-                                  <ArrowLeft className="w-4 h-4" />
-                                  Back
-                                </Button> */}
-                
-                                <Button
-                                   type="button"
-                                   onClick={onSubmit}
-                                  disabled={updateOrderReceivedMutation.isPending}
-                                  className="flex items-center gap-2"
-                                >
-                                  {updateOrderReceivedMutation.isPending ? (
-                                    <>
-                                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                      Updating...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Send className="w-4 h-4" />
-                                      Update
-                                    </>
-                                  )}
-                                </Button>
-                              </div>
-                            </form>
-              </CardContent>
-            </Card>
-          </div>
+                {users.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {users.map((user, index) => (
+                      <div
+                        key={index}
+                        onClick={() => setHighlightedItem(index)} 
+                        className={`relative p-2 rounded-lg border shadow-sm transition-colors duration-200 ${
+                          highlightedItem == index
+                            ? "bg-blue-50/60 border-2 border-blue-500"
+                            : " "
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-400 w-4 text-right shrink-0">
+                            {index + 1}.
+                          </span>
+                          
+                        
+                          <div className="flex flex-col">
+                            <span className="text-xs text-gray-500">Box</span>
+                            <span className="text-xs font-medium">
+                              {user.work_order_rc_sub_box}
+                            </span>
+                          </div>
+                          
+                     
+                        </div>
+                        
+                        <div className="">
+                          <Label htmlFor={`tcode_${index}`} className="text-xs">
+                            T Code <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            id={`tcode_${index}`}
+                            name="work_order_rc_sub_barcode"
+                            value={user.work_order_rc_sub_barcode}
+                            onChange={(e) => onChange(e, index)}
+                            className="h-7 text-xs mt-1"
+                            required
+                          />
+                        </div>
+                        
+                        <Input
+                          type="hidden"
+                          name="id"
+                          value={user.id}
+                          onChange={(e) => onChange(e, index)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-32 border border-dashed rounded-lg bg-gray-50">
+                    <div className="bg-gray-100 p-2 rounded-full mb-2">
+                      <Package className="h-4 w-4 text-gray-500" />
+                    </div>
+                    <p className="text-xs text-gray-500 mb-2">
+                      No items added yet
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <Button
+                  type="button"
+                  onClick={onSubmit}
+                  disabled={updateOrderReceivedMutation.isPending}
+                  className="flex items-center gap-2"
+                >
+                  {updateOrderReceivedMutation.isPending ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Update
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </Page>
   );
 };
