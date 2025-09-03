@@ -102,15 +102,37 @@ const DcReceiptReceived = () => {
       />
     );
   }
-  const splitBarcodeData = (data, chunkSize = 9) => {
+  // const splitBarcodeData = (data, chunkSize = 9) => {
+  //   const barcodes = data.split(",").map((b) => b.trim());
+  //   const chunks = [];
+
+  //   for (let i = 0; i < barcodes.length; i += chunkSize) {
+  //     chunks.push(barcodes.slice(i, i + chunkSize).join(", "));
+  //   }
+
+  //   return chunks.map((chunk, index) => <div key={index}>{chunk}</div>);
+  // };
+  const splitBarcodeData = (data) => {
     const barcodes = data.split(",").map((b) => b.trim());
-    const chunks = [];
-
-    for (let i = 0; i < barcodes.length; i += chunkSize) {
-      chunks.push(barcodes.slice(i, i + chunkSize).join(", "));
-    }
-
-    return chunks.map((chunk, index) => <div key={index}>{chunk}</div>);
+    
+ 
+    const barcodeCounts = {};
+    barcodes.forEach(barcode => {
+      barcodeCounts[barcode] = (barcodeCounts[barcode] || 0) + 1;
+    });
+  
+    return (
+      <div className="flex flex-wrap gap-1">
+        {Object.entries(barcodeCounts).map(([barcode, count], index) => (
+          <span key={index} className="inline-flex items-center bg-gray-100 px-2 py-1 rounded text-sm">
+            {barcode}
+            {count > 1 && (
+              <span className="ml-1 text-gray-600">(×{count})</span>
+            )}
+          </span>
+        ))}
+      </div>
+    );
   };
   const { workOrder, workOrderSub } = data;
 

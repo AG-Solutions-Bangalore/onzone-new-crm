@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { useToast } from "@/hooks/use-toast";
 import BASE_URL from "@/config/BaseUrl";
 import Page from "../dashboard/page";
@@ -24,6 +24,7 @@ import { getTodayDate } from "@/utils/currentDate";
 import dateyear from "@/utils/DateYear";
 import { useFetchFactory } from "@/hooks/useApi";
 import { LoaderComponent } from "@/components/LoaderComponent/LoaderComponent";
+import { Textarea } from "@/components/ui/textarea";
 
 // Zod schema for validation
 const orderSchema = z.object({
@@ -71,12 +72,13 @@ const AddOrderReceived = () => {
   });
 
   const [users, setUsers] = useState([
-    { work_order_rc_sub_barcode: "", work_order_rc_sub_box: "" },
+    { work_order_rc_sub_barcode: "", work_order_rc_sub_box: 1 },
   ]);
+  const [duplicateBarcodes, setDuplicateBarcodes] = useState({});
   const { data: factoryData ,isFetching } = useFetchFactory();
+ 
 
-
-  // Fetch work orders based on factory
+ 
   const { data: workOrders = [] } = useQuery({
     queryKey: ["workOrders", workorder.work_order_rc_factory_no],
     queryFn: async () => {
@@ -99,27 +101,6 @@ const AddOrderReceived = () => {
     enabled: !!workorder.work_order_rc_factory_no,
   });
  
-  // Fetch brand based on work order
-  // const { data: brandData } = useQuery({
-  //   queryKey: ["brand", workOrders.find((workOrder) => workOrder.work_order_no === workorder.work_order_rc_id)?.id],
-  //   queryFn: async () => {
-  //     if (!workorder.work_order_rc_id) return { work_order_brand: "" };
-  //     const token = localStorage.getItem("token");
-      
-  //     const response = await fetch(
-  //       `${BASE_URL}/api/fetch-work-order-brand/${workorder.work_order_rc_id}`,
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //       }
-  //     );
-  //     if (!response.ok) throw new Error("Failed to fetch brand");
-  //     const data = await response.json();
-  //     return data.workorderbrand || { work_order_brand: "" };
-  //   },
-  //   enabled: !!workorder.work_order_rc_id,
-  // });
   const { data: brandData } = useQuery({
     queryKey: ["brand", workorder.work_order_rc_id],
     queryFn: async () => {
@@ -127,8 +108,7 @@ const AddOrderReceived = () => {
       const token = localStorage.getItem("token");
       console.log("workorder",workorder?.work_order_rc_id)
      
-      // const selectedWorkOrder = workOrders.find((item) => item.work_order_no == workorder.work_order_rc_id);
-      // console.log("hello",selectedWorkOrder)
+   
       const response = await fetch(
         `${BASE_URL}/api/fetch-work-order-brand/${workorder.work_order_rc_id}`,
         {
@@ -144,7 +124,7 @@ const AddOrderReceived = () => {
     enabled: !!workorder.work_order_rc_id,
   });
 
-  // Update brand when brandData changes
+ 
   useEffect(() => {
     if (brandData?.work_order_brand) {
       setWorkorder((prev) => ({
@@ -204,27 +184,118 @@ const AddOrderReceived = () => {
     }
   };
 
+  const calculateDuplicates = (users) => {
+    const allBarcodes = [];
+    
+    users.forEach(user => {
+      if (user.work_order_rc_sub_barcode) {
+        const codes = user.work_order_rc_sub_barcode.split(',')
+          .map(code => code.trim())
+          .filter(code => code.length === 6);
+        allBarcodes.push(...codes);
+      }
+    });
+    
+    const duplicates = {};
+    const seen = {};
+    
+    allBarcodes.forEach(barcode => {
+      if (seen[barcode]) {
+        duplicates[barcode] = (duplicates[barcode] || 1) + 1;
+      } else {
+        seen[barcode] = true;
+      }
+    });
+    
+    return duplicates;
+  };
+  useEffect(() => {
+    setDuplicateBarcodes(calculateDuplicates(users));
+  }, [users]);
+  const handleBarcodeChange = (e, index) => {
+    const maxPcs = parseInt(workorder.work_order_rc_pcs || 0, 10);
+    const inputValue = e.target.value;
+    
+    
+    const currentTotal = users.reduce((total, user) => {
+      if (user.work_order_rc_sub_barcode) {
+        const codes = user.work_order_rc_sub_barcode.split(',');
+        return total + codes.filter(code => code.trim().length === 6).length;
+      }
+      return total;
+    }, 0);
+    
+
+    const cleanedInput = inputValue.replace(/,/g, "");
+    const newCodes = [];
+    for (let i = 0; i < cleanedInput.length; i += 6) {
+      newCodes.push(cleanedInput.substring(i, i + 6));
+    }
+    
+    const wouldBeTotal = currentTotal - 
+      (users[index].work_order_rc_sub_barcode ? 
+        users[index].work_order_rc_sub_barcode.split(',').filter(code => code.trim().length === 6).length : 0) + 
+      newCodes.filter(code => code.length === 6).length;
+    
+
+    if (wouldBeTotal > maxPcs) {
+      toast({
+        title: "Limit reached",
+        description: `You cannot enter more than ${maxPcs} T-codes total.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+
+    onChange(e, index);
+    
+    
+    if (newCodes.length > 0 && newCodes[newCodes.length - 1].length === 6) {
+      CheckBarcode(e, index);
+    }
+  };
+  
   const onChange = (e, index) => {
+    const inputValue = e.target.value;
+    
+    
+    const cleanedInput = inputValue.replace(/,/g, "");
+    
+   
+    let formattedInput = "";
+    for (let i = 0; i < cleanedInput.length; i += 6) {
+      if (i > 0) formattedInput += ",";
+      formattedInput += cleanedInput.substring(i, i + 6);
+    }
+    
     const newUsers = [...users];
-    newUsers[index].work_order_rc_sub_barcode = e.target.value;
+    newUsers[index].work_order_rc_sub_barcode = formattedInput;
     setUsers(newUsers);
   };
-
+  
   const addItem = (e) => {
     e.preventDefault();
     const boxCount = parseInt(workorder.work_order_rc_box) || 0;
     if (users.length < boxCount) {
-      setUsers([
+      const newUsers = [
         ...users,
-        { work_order_rc_sub_barcode: "", work_order_rc_sub_box: "" },
-      ]);
+        { work_order_rc_sub_barcode: "", work_order_rc_sub_box: users.length + 1 },
+      ];
+      setUsers(newUsers);
     }
   };
-
+  
   const removeUser = (index) => {
     const newUsers = users.filter((_, i) => i !== index);
-    setUsers(newUsers);
+  
+    const updatedUsers = newUsers.map((u, i) => ({
+      ...u,
+      work_order_rc_sub_box: i + 1,
+    }));
+    setUsers(updatedUsers);
   };
+  
   // console.log("sumbit",workorder.work_order_rc_id)
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -282,11 +353,19 @@ const AddOrderReceived = () => {
 
   const CheckBarcode = async (e, index) => {
     const inputValue = e.target.value;
+    
+   
     const cleanedInput = inputValue.replace(/,/g, "");
-    const formattedInput = cleanedInput.match(/.{1,6}/g)?.join(",") || "";
+    
+    let formattedInput = "";
+    for (let i = 0; i < cleanedInput.length; i += 6) {
+      if (i > 0) formattedInput += ",";
+      formattedInput += cleanedInput.substring(i, i + 6);
+    }
+    
     const barcodes = formattedInput.split(",");
     const lastBarcode = barcodes[barcodes.length - 1];
-
+  
     if (lastBarcode.length === 6) {
       const workId = workorder.work_order_no;
       const token = localStorage.getItem("token");
@@ -299,10 +378,10 @@ const AddOrderReceived = () => {
             },
           }
         );
-
+  
         if (!response.ok) throw new Error("Barcode validation failed");
         const data = await response.json();
-
+  
         if (data?.code === 200) {
           toast({
             title: "Success",
@@ -312,8 +391,18 @@ const AddOrderReceived = () => {
           const newUsers = [...users];
           newUsers[index].work_order_rc_sub_barcode = formattedInput;
           setUsers(newUsers);
+  
+         
+          const totalTCodes = users.reduce((total, user) => {
+            if (user.work_order_rc_sub_barcode) {
+              const codes = user.work_order_rc_sub_barcode.split(',');
+              return total + codes.filter(code => code.trim().length === 6).length;
+            }
+            return total;
+          }, 0);
+          
           const nextIndex = index + 1;
-          if (inputRefs.current[nextIndex]) {
+          if (inputRefs.current[nextIndex] && totalTCodes < parseInt(workorder.work_order_rc_pcs || 0, 10)) {
             inputRefs.current[nextIndex].focus();
           }
         } else {
@@ -331,11 +420,39 @@ const AddOrderReceived = () => {
         });
       }
     }
-
+  
     const newUsers = [...users];
     newUsers[index].work_order_rc_sub_barcode = formattedInput;
     setUsers(newUsers);
   };
+  
+  const isInputDisabled = (index) => {
+    const maxPcs = parseInt(workorder.work_order_rc_pcs || 0, 10);
+    
+   
+    const totalTCodes = users.reduce((total, user) => {
+      if (user.work_order_rc_sub_barcode) {
+        const codes = user.work_order_rc_sub_barcode.split(',');
+        return total + codes.filter(code => code.trim().length === 6).length;
+      }
+      return total;
+    }, 0);
+    
+
+    return totalTCodes >= maxPcs && !users[index].work_order_rc_sub_barcode;
+  };
+  const totalTCodes = users.reduce((total, user) => {
+    if (user.work_order_rc_sub_barcode) {
+      const codes = user.work_order_rc_sub_barcode.split(',');
+      return total + codes.filter(code => code.trim().length === 6).length;
+    }
+    return total;
+  }, 0);
+
+ 
+
+ 
+  
 if (isFetching) {
     return <LoaderComponent name=" Data" />;
   }
@@ -402,12 +519,7 @@ if (isFetching) {
                   <Select
                     name="work_order_rc_id"
                     value={workorder.work_order_rc_id}
-                    // onValueChange={(value) =>
-                    //   setWorkorder({
-                    //     ...workorder,
-                    //     work_order_rc_id: value,
-                    //   })
-                    // }
+                 
                     onValueChange={(value) => {
                       const selectedWorkOrder = workOrders.find((item) => item.id === value);
                       setWorkorder({
@@ -598,69 +710,102 @@ if (isFetching) {
 
               {/* Barcode entries */}
               <div className="space-y-2">
-                <Label>Barcode Entries (Total: {users.length})</Label>
+              <Label>
+          Barcode Entries (Total Box: {users.length}, Total Barcode: {totalTCodes})
+         
+        </Label>
 
-                {/* <ScrollArea className="h-64 rounded-md border p-4"> */}
+           
                   <div className="space-y-1">
-                    {users.map((user, index) => (
+                    {users.map((user, index) => {
+                       const tCodeCount = user.work_order_rc_sub_barcode 
+                       ? user.work_order_rc_sub_barcode.split(',').filter(code => code.trim().length === 6).length 
+                       : 0;
+                         // Calculate duplicates for this specific box
+            const boxDuplicates = {};
+            if (user.work_order_rc_sub_barcode) {
+              const codes = user.work_order_rc_sub_barcode.split(',')
+                .map(code => code.trim())
+                .filter(code => code.length === 6);
+              
+              const seen = {};
+              codes.forEach(barcode => {
+                if (seen[barcode]) {
+                  boxDuplicates[barcode] = (boxDuplicates[barcode] || 1) + 1;
+                } else {
+                  seen[barcode] = true;
+                }
+              });
+            }
+            
+            const formatBoxDuplicates = () => {
+              return Object.entries(boxDuplicates).map(([barcode, count]) => (
+                `${barcode} × ${count}`
+              )).join(', ');
+            };
+                      return (
                       <div key={index} className="flex items-center gap-3">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 w-full">
-                          {/* Box Number */}
-                          <div className="space-y-2">
-                            <Label htmlFor={`box-${index}`}>
-                              Box {index + 1}
-                            </Label>
-                            <Input
-                              id={`box-${index}`}
-                              name={`work_order_rc_sub_box_${index}`}
-                              value={user.work_order_rc_sub_box}
-                              onChange={(e) => {
-                                const newUsers = [...users];
-                                newUsers[index].work_order_rc_sub_box =
-                                  e.target.value;
-                                setUsers(newUsers);
-                              }}
-                            />
-                          </div>
+                        <div className="grid grid-cols-1  gap-3 w-full">
+                        
 
                           {/* Barcode */}
-                          <div className="space-y-2 md:col-span-3">
-                            <Label htmlFor={`barcode-${index}`}>T Code</Label>
+                          <div className="space-y-2 ">
+                            <Label htmlFor={`barcode-${index}`}>     Box {index + 1} — T Code </Label>
                             <div className="flex gap-2">
-                              <Input
+                              <Textarea
                                 id={`barcode-${index}`}
                                 ref={(el) => (inputRefs.current[index] = el)}
                                 name={`work_order_rc_sub_barcode_${index}`}
                                 value={user.work_order_rc_sub_barcode}
-                                onChange={(e) => {
-                                  onChange(e, index);
-                                  CheckBarcode(e, index);
-                                }}
+                                onChange={(e) => handleBarcodeChange(e, index)}
+                               rows={3}
                                 className="flex-1"
+                                disabled={isInputDisabled(index)}
                               />
+                              
                               <Button
                                 variant="outline"
                                 size="icon"
                                 type="button"
                                 onClick={() => removeUser(index)}
+                      className="hover:text-red-800 "
                                 disabled={users.length <= 1}
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-4 w-4 " />
                               </Button>
                             </div>
+                            <span className="text-sm">
+                      Total barcode: ({tCodeCount} entered)
+                      {Object.keys(boxDuplicates).length > 0 && (
+                        <span className="text-amber-600 ml-2">
+                          Duplicates: {formatBoxDuplicates()}
+                        </span>
+                      )}
+                    </span>
                           </div>
+                          <span>
+                         
+                              </span>
                         </div>
                       </div>
-                    ))}
+                 )   })}
                   </div>
                 {/* </ScrollArea> */}
 
                 <Button
                   variant="outline"
                   onClick={addItem}
+                
                   disabled={
                     !workorder.work_order_rc_box ||
-                    users.length >= (parseInt(workorder.work_order_rc_box) || 0)
+                    users.length >= (parseInt(workorder.work_order_rc_box) || 0) ||
+                    users.reduce((total, user) => {
+                      if (user.work_order_rc_sub_barcode) {
+                        const codes = user.work_order_rc_sub_barcode.split(',');
+                        return total + codes.filter(code => code.trim().length === 6).length;
+                      }
+                      return total;
+                    }, 0) >= parseInt(workorder.work_order_rc_pcs || 0, 10)
                   }
                 >
                   + Add Box
