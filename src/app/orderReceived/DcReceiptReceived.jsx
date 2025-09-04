@@ -49,7 +49,7 @@ const DcReceiptReceived = () => {
       );
       return {
         workOrder: response.data.workorderrc || {},
-        workOrderSub: response.data.workorderrcsub || [],
+        workOrderSub: response.data.workorderrcsubNew || [],
         workOrderFooter: response.data.workorderfooter || {},
       };
     },
@@ -166,11 +166,11 @@ const DcReceiptReceived = () => {
       {/* Box Details */}
 
       {/* Barcode Section */}
-      <div className="border border-black p-1  ">
-        <div className="flex flex-row items-center justify-between border  border-black p-2 mb-2">
-          <span>Box: {boxNumber}</span>
-          <span>Total No of Pcs: {totalPcs}</span>
-        </div>
+      <div className="border flex flex-row items-center justify-start border-black p-1  ">
+        <div className="flex flex-row items-center justify-start  p-2 ">
+          <span>Box: {boxNumber}</span>{"/"}
+          <span>Total Pcs: {totalPcs}</span>
+        </div> 
         <div className="p-1">{splitBarcodeData(barcodeData)}</div>
       </div>
     </div>
