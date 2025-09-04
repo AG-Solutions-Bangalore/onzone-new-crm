@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Send, ArrowLeft, Package, Calendar, Factory, ChevronLeft, Minus } from "lucide-react";
+import {
+  Send,
+  ArrowLeft,
+  Package,
+  Calendar,
+  Factory,
+  ChevronLeft,
+  Minus,
+} from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import * as z from "zod";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,11 +26,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-
 import axios from "axios";
 import BASE_URL from "@/config/BaseUrl";
-
-import { LoaderComponent, ErrorComponent } from "@/components/LoaderComponent/LoaderComponent";
+import {
+  LoaderComponent,
+  ErrorComponent,
+} from "@/components/LoaderComponent/LoaderComponent";
 import Page from "../dashboard/page";
 
 const work_receive = [
@@ -36,7 +44,9 @@ const formSchema = z.object({
   work_order_rc_dc_date: z.string().min(1, "DC Date is required"),
   work_order_rc_box: z.number().min(1, "Box count is required"),
   work_order_rc_pcs: z.number().min(1, "Pieces count is required"),
-  work_order_rc_fabric_received: z.string().min(1, "Fabric received status is required"),
+  work_order_rc_fabric_received: z
+    .string()
+    .min(1, "Fabric received status is required"),
   work_order_rc_fabric_count: z.string().optional(),
   work_order_rc_remarks: z.string().optional(),
   work_order_rc_count: z.number().optional(),
@@ -53,7 +63,6 @@ const EditOrderReceived = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-
   const [workorder, setWorkOrderReceive] = useState({
     work_order_rc_factory_no: "",
     work_order_rc_id: "",
@@ -69,13 +78,11 @@ const EditOrderReceived = () => {
     work_order_rc_count: "",
     work_order_rc_remarks: "",
   });
-
   const useTemplate = {
     id: "",
     work_order_rc_sub_barcode: "",
     work_order_rc_sub_box: "",
   };
-
   const [users, setUsers] = useState([useTemplate]);
   const [isInitialDataLoaded, setIsInitialDataLoaded] = useState(false);
   const [highlightedItem, setHighlightedItem] = useState(null);
@@ -103,7 +110,7 @@ const EditOrderReceived = () => {
   useEffect(() => {
     if (workOrderData && !isInitialDataLoaded) {
       const { workorderrc, workorderrcsub } = workOrderData;
-      
+
       if (workorderrc) {
         setWorkOrderReceive({
           work_order_rc_factory_no: workorderrc.work_order_rc_factory_no || "",
@@ -114,24 +121,28 @@ const EditOrderReceived = () => {
           work_order_rc_brand: workorderrc.work_order_rc_brand || "",
           work_order_rc_box: workorderrc.work_order_rc_box || "",
           work_order_rc_pcs: workorderrc.work_order_rc_pcs || "",
-          work_order_rc_fabric_received: workorderrc.work_order_rc_fabric_received || "",
-          work_order_rc_received_by: workorderrc.work_order_rc_received_by || "",
-          work_order_rc_fabric_count: workorderrc.work_order_rc_fabric_count || "",
+          work_order_rc_fabric_received:
+            workorderrc.work_order_rc_fabric_received || "",
+          work_order_rc_received_by:
+            workorderrc.work_order_rc_received_by || "",
+          work_order_rc_fabric_count:
+            workorderrc.work_order_rc_fabric_count || "",
           work_order_rc_count: workorderrc.work_order_rc_count || "",
           work_order_rc_remarks: workorderrc.work_order_rc_remarks || "",
         });
       }
-
       if (workorderrcsub && workorderrcsub.length > 0) {
-        setUsers(workorderrcsub.map(item => ({
-          id: item.id || "",
-          work_order_rc_sub_barcode: item.work_order_rc_sub_barcode || "",
-          work_order_rc_sub_box: item.work_order_rc_sub_box || "",
-        })));
+        setUsers(
+          workorderrcsub.map((item) => ({
+            id: item.id || Date.now() + Math.random(), // Ensure unique id
+            work_order_rc_sub_barcode: item.work_order_rc_sub_barcode || "",
+            work_order_rc_sub_box: item.work_order_rc_sub_box || "",
+          }))
+        );
       } else {
         setUsers([useTemplate]);
       }
-      
+
       setIsInitialDataLoaded(true);
     }
   }, [workOrderData, isInitialDataLoaded]);
@@ -143,7 +154,6 @@ const EditOrderReceived = () => {
 
   const onInputChange = (e) => {
     const { name, value } = e.target;
-
     if (name === "work_order_rc_box" || name === "work_order_rc_pcs") {
       if (validateOnlyDigits(value)) {
         setWorkOrderReceive((prev) => ({
@@ -159,16 +169,28 @@ const EditOrderReceived = () => {
     }
   };
 
-  const onChange = (e, index) => {
+  const onChange = (e, userId) => {
     const { name, value } = e.target;
     setUsers((prev) =>
-      prev.map((user, i) => (i === index ? { ...user, [name]: value } : user))
+      prev.map((user) =>
+        user.id === userId ? { ...user, [name]: value } : user
+      )
     );
   };
 
- 
+  const handleCardClick = (userId, e) => {
+    e.stopPropagation();
+    setHighlightedItem(userId);
+  };
 
-  // Update mutation
+  useEffect(() => {
+    const handleClickOutside = () => setHighlightedItem(null);
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, []);
+
   const updateOrderReceivedMutation = useMutation({
     mutationFn: async (data) => {
       const token = localStorage.getItem("token");
@@ -207,7 +229,6 @@ const EditOrderReceived = () => {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-
     const data = {
       work_order_rc_dc_no: workorder.work_order_rc_dc_no,
       work_order_rc_dc_date: workorder.work_order_rc_dc_date,
@@ -219,7 +240,6 @@ const EditOrderReceived = () => {
       workorder_sub_rc_data: users,
       work_order_rc_count: workorder.work_order_rc_count,
     };
-
     const validation = formSchema.safeParse(data);
     if (!validation.success) {
       toast({
@@ -228,7 +248,7 @@ const EditOrderReceived = () => {
         description: (
           <div className="grid gap-1">
             {validation.error.errors.map((error, i) => {
-              const field = error.path[0].toString().replace(/_/g, ' ');
+              const field = error.path[0].toString().replace(/_/g, " ");
               const label = field.charAt(0).toUpperCase() + field.slice(1);
               return (
                 <div key={i} className="flex items-start gap-2">
@@ -236,7 +256,8 @@ const EditOrderReceived = () => {
                     {i + 1}
                   </div>
                   <p className="text-xs">
-                    <span className="font-medium">{label}:</span> {error.message}
+                    <span className="font-medium">{label}:</span>{" "}
+                    {error.message}
                   </p>
                 </div>
               );
@@ -246,18 +267,16 @@ const EditOrderReceived = () => {
       });
       const firstError = validation.error.errors[0];
       if (firstError.path[0] === "workorder_sub_rc_data") {
-        setHighlightedItem(firstError.path[1]); 
+        setHighlightedItem(users[firstError.path[1]]?.id);
       }
       return;
     }
-
     updateOrderReceivedMutation.mutate(data);
   };
 
   if (isLoading || !isInitialDataLoaded) {
     return <LoaderComponent name="Work Order Received Data" />;
   }
-
   if (isError) {
     return (
       <ErrorComponent
@@ -284,12 +303,11 @@ const EditOrderReceived = () => {
               </Button>
             </div>
           </CardHeader>
-
           <CardContent className="p-4">
-            <form className="space-y-2">
+            <form className="space-y-1">
               {/* Basic Information Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                <div className="space-y-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                <div className="">
                   <Label htmlFor="work_order_rc_factory_no">Factory</Label>
                   <Input
                     id="work_order_rc_factory_no"
@@ -300,8 +318,7 @@ const EditOrderReceived = () => {
                     className="bg-gray-50"
                   />
                 </div>
-
-                <div className="space-y-1">
+                <div className="">
                   <Label htmlFor="work_order_rc_id">Work Order ID</Label>
                   <Input
                     id="work_order_rc_id"
@@ -312,8 +329,7 @@ const EditOrderReceived = () => {
                     className="bg-gray-50"
                   />
                 </div>
-
-                <div className="space-y-1">
+                <div className="">
                   <Label htmlFor="work_order_rc_date">
                     <Calendar className="w-4 h-4 inline mr-1" />
                     Receive Date
@@ -328,8 +344,7 @@ const EditOrderReceived = () => {
                     className="bg-gray-50"
                   />
                 </div>
-
-                <div className="space-y-1">
+                <div className="">
                   <Label htmlFor="work_order_rc_dc_no">DC No</Label>
                   <Input
                     id="work_order_rc_dc_no"
@@ -340,8 +355,7 @@ const EditOrderReceived = () => {
                     className="bg-gray-50"
                   />
                 </div>
-
-                <div className="space-y-1">
+                <div className="">
                   <Label htmlFor="work_order_rc_dc_date">
                     <Calendar className="w-4 h-4 inline mr-1" />
                     DC Date
@@ -356,8 +370,7 @@ const EditOrderReceived = () => {
                     className="bg-gray-50"
                   />
                 </div>
-
-                <div className="space-y-1">
+                <div className="">
                   <Label htmlFor="work_order_rc_brand">Brand</Label>
                   <Input
                     id="work_order_rc_brand"
@@ -368,8 +381,7 @@ const EditOrderReceived = () => {
                     className="bg-gray-50"
                   />
                 </div>
-
-                <div className="space-y-1">
+                <div className="">
                   <Label htmlFor="work_order_rc_box">
                     No of Box <span className="text-red-500">*</span>
                   </Label>
@@ -381,8 +393,7 @@ const EditOrderReceived = () => {
                     required
                   />
                 </div>
-
-                <div className="space-y-1">
+                <div className="">
                   <Label htmlFor="work_order_rc_pcs">
                     Total No of Pcs <span className="text-red-500">*</span>
                   </Label>
@@ -394,8 +405,7 @@ const EditOrderReceived = () => {
                     required
                   />
                 </div>
-
-                <div className="space-y-1">
+                <div className="">
                   <Label htmlFor="work_order_rc_fabric_received">
                     Fabric Received <span className="text-red-500">*</span>
                   </Label>
@@ -403,9 +413,9 @@ const EditOrderReceived = () => {
                     name="work_order_rc_fabric_received"
                     value={workorder.work_order_rc_fabric_received}
                     onValueChange={(value) =>
-                      setWorkOrderReceive(prev => ({
+                      setWorkOrderReceive((prev) => ({
                         ...prev,
-                        work_order_rc_fabric_received: value
+                        work_order_rc_fabric_received: value,
                       }))
                     }
                     required
@@ -422,10 +432,11 @@ const EditOrderReceived = () => {
                     </SelectContent>
                   </Select>
                 </div>
-
                 {workorder.work_order_rc_fabric_received === "Yes" && (
-                  <div className="space-y-1">
-                    <Label htmlFor="work_order_rc_received_by">Fabric Received By</Label>
+                  <div className="">
+                    <Label htmlFor="work_order_rc_received_by">
+                      Fabric Received By
+                    </Label>
                     <Input
                       id="work_order_rc_received_by"
                       name="work_order_rc_received_by"
@@ -434,13 +445,16 @@ const EditOrderReceived = () => {
                     />
                   </div>
                 )}
-
-                <div className={`space-y-1 ${
-                  workorder.work_order_rc_fabric_received === "Yes"
-                    ? "xl:col-span-2"
-                    : "xl:col-span-1"
-                }`}>
-                  <Label htmlFor="work_order_rc_fabric_count">Fabric Left Over</Label>
+                <div
+                  className={` ${
+                    workorder.work_order_rc_fabric_received === "Yes"
+                      ? "xl:col-span-2"
+                      : "xl:col-span-1"
+                  }`}
+                >
+                  <Label htmlFor="work_order_rc_fabric_count">
+                    Fabric Left Over
+                  </Label>
                   <Input
                     id="work_order_rc_fabric_count"
                     name="work_order_rc_fabric_count"
@@ -448,12 +462,13 @@ const EditOrderReceived = () => {
                     onChange={onInputChange}
                   />
                 </div>
-
-                <div className={`space-y-1 ${
-                  workorder.work_order_rc_fabric_received === "Yes"
-                    ? "xl:col-span-4"
-                    : "xl:col-span-2"
-                }`}>
+                <div
+                  className={` ${
+                    workorder.work_order_rc_fabric_received === "Yes"
+                      ? "xl:col-span-4"
+                      : "xl:col-span-2"
+                  }`}
+                >
                   <Label htmlFor="work_order_rc_remarks">Remarks</Label>
                   <Textarea
                     id="work_order_rc_remarks"
@@ -464,69 +479,130 @@ const EditOrderReceived = () => {
                   />
                 </div>
               </div>
-
               <Separator />
-
-              {/* Sub Items Section - Compact Version */}
-              <div className="space-y-1">
+             
+              <div className="">
                 <div className="flex justify-between items-center mb-2">
                   <h4 className="font-semibold text-lg">Item Details</h4>
                   <Badge variant="outline" className="text-xs">
                     {users.length} items
                   </Badge>
                 </div>
-                
                 {users.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                    {users.map((user, index) => (
-                      <div
-                        key={index}
-                        onClick={() => setHighlightedItem(index)} 
-                        className={`relative p-2 rounded-lg border shadow-sm transition-colors duration-200 ${
-                          highlightedItem == index
-                            ? "bg-blue-50/60 border-2 border-blue-500"
-                            : " "
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-400 w-4 text-right shrink-0">
-                            {index + 1}.
+                  Object.entries(
+                    users.reduce((acc, user) => {
+                      const box = user.work_order_rc_sub_box || "No Box";
+                      if (!acc[box]) acc[box] = [];
+                      acc[box].push(user);
+                      return acc;
+                    }, {})
+                  ).map(([box, boxUsers], boxIndex) => {
+                    const barcodeGroups = boxUsers.reduce((acc, user) => {
+                      const barcode =
+                        user.work_order_rc_sub_barcode || "No Barcode";
+                      if (!acc[barcode]) acc[barcode] = [];
+                      acc[barcode].push(user);
+                      return acc;
+                    }, {});
+
+                    return (
+                      <div key={boxIndex} className="mb-4">
+                        <div className="flex items-center justify-between bg-gray-100 px-3 py-1 rounded-md mb-2">
+                          <span className="text-sm font-semibold">
+                            Box {box}
                           </span>
-                          
-                        
-                          <div className="flex flex-col">
-                            <span className="text-xs text-gray-500">Box</span>
-                            <span className="text-xs font-medium">
-                              {user.work_order_rc_sub_box}
-                            </span>
-                          </div>
-                          
-                     
+                          <Badge variant="secondary" className="text-xs">
+                            {boxUsers.length} codes
+                          </Badge>
                         </div>
-                        
-                        <div className="">
-                          <Label htmlFor={`tcode_${index}`} className="text-xs">
-                            T Code <span className="text-red-500">*</span>
-                          </Label>
-                          <Input
-                            id={`tcode_${index}`}
-                            name="work_order_rc_sub_barcode"
-                            value={user.work_order_rc_sub_barcode}
-                            onChange={(e) => onChange(e, index)}
-                            className="h-7 text-xs mt-1"
-                            required
-                          />
+                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-2">
+                          {Object.entries(barcodeGroups).map(
+                            ([barcode, barcodeUsers]) => {
+                              const count = barcodeUsers.length;
+                              const firstUser = barcodeUsers[0];
+
+                              return (
+                                <div
+                                  key={firstUser.id}
+                                  onClick={(e) =>
+                                    handleCardClick(firstUser.id, e)
+                                  }
+                                  className={`relative p-1 flex flex-col gap-1 rounded-lg border shadow-sm transition-colors duration-200 ${
+                                    highlightedItem === firstUser.id
+                                      ? "bg-blue-50/60 border-2 border-blue-500"
+                                      : ""
+                                  }`}
+                                >
+                                         {count > 1 && (
+                                   <div className="absolute top-0 right-0 px-1 bg-amber-500 border rounded-b-full">
+                                   <span className="text-xs w-full text-black">
+                                        {count}
+                                      </span>
+                            </div>
+                                         )}
+                                           {count > 1 && (
+                                    <div className=" p-0.5 bg-amber-500 border rounded-md flex items-center justify-between gap-1">
+                                      {/* <span className="text-xs w-full text-black">
+                                        {count}
+                                      </span> */}
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                        
+                                          const firstOccurrenceId = users.find(
+                                            (u) => u.work_order_rc_sub_barcode === barcode
+                                          )?.id;
+                                          setUsers((prev) => prev.filter((u) => u.id !== firstOccurrenceId));
+                                        }}
+                                        className="text-sm bg-white  w-full hover:text-red-500 flex items-center justify-center text-black "
+                                      >
+                                        <Minus className="h-3 w-5 text-center" />
+                                      </button>
+                                    </div>
+                                  )}
+                                  <div  className="mt-1">
+                                
+                                    <Input
+                                      id={`tcode_${box}_${firstUser.id}`}
+                                      name="work_order_rc_sub_barcode"
+                                      value={
+                                        firstUser.work_order_rc_sub_barcode
+                                      }
+                                      onChange={(e) => {
+                                        const newBarcode = e.target.value;
+
+                                        setUsers((prev) =>
+                                          prev.map((u) =>
+                                            u.work_order_rc_sub_barcode ===
+                                            barcode
+                                              ? {
+                                                  ...u,
+                                                  work_order_rc_sub_barcode:
+                                                    newBarcode,
+                                                }
+                                              : u
+                                          )
+                                        );
+                                      }}
+                                      className="h-7 text-sm "
+                                      required
+                                    />
+                                  </div>
+                                 
+                                  <Input
+                                    type="hidden"
+                                    name="id"
+                                    value={firstUser.id}
+                                  />
+                                </div>
+                              );
+                            }
+                          )}
                         </div>
-                        
-                        <Input
-                          type="hidden"
-                          name="id"
-                          value={user.id}
-                          onChange={(e) => onChange(e, index)}
-                        />
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })
                 ) : (
                   <div className="flex flex-col items-center justify-center h-32 border border-dashed rounded-lg bg-gray-50">
                     <div className="bg-gray-100 p-2 rounded-full mb-2">
@@ -540,7 +616,6 @@ const EditOrderReceived = () => {
               </div>
 
               <Separator />
-
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <Button

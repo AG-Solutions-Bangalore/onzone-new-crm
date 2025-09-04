@@ -74,8 +74,9 @@ const AddOrderReceived = () => {
   const [users, setUsers] = useState([
     { work_order_rc_sub_barcode: "", work_order_rc_sub_box: 1 },
   ]);
+  const [duplicateBarcodes, setDuplicateBarcodes] = useState({});
   const { data: factoryData ,isFetching } = useFetchFactory();
-
+ 
 
  
   const { data: workOrders = [] } = useQuery({
@@ -138,7 +139,7 @@ const AddOrderReceived = () => {
     mutationFn: async (data) => {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `${BASE_URL}/api/create-work-order-receivedD`,
+        `${BASE_URL}/api/create-work-order-received`,
         {
           method: "POST",
           headers: {
@@ -182,6 +183,35 @@ const AddOrderReceived = () => {
       }
     }
   };
+
+  const calculateDuplicates = (users) => {
+    const allBarcodes = [];
+    
+    users.forEach(user => {
+      if (user.work_order_rc_sub_barcode) {
+        const codes = user.work_order_rc_sub_barcode.split(',')
+          .map(code => code.trim())
+          .filter(code => code.length === 6);
+        allBarcodes.push(...codes);
+      }
+    });
+    
+    const duplicates = {};
+    const seen = {};
+    
+    allBarcodes.forEach(barcode => {
+      if (seen[barcode]) {
+        duplicates[barcode] = (duplicates[barcode] || 1) + 1;
+      } else {
+        seen[barcode] = true;
+      }
+    });
+    
+    return duplicates;
+  };
+  useEffect(() => {
+    setDuplicateBarcodes(calculateDuplicates(users));
+  }, [users]);
   const handleBarcodeChange = (e, index) => {
     const maxPcs = parseInt(workorder.work_order_rc_pcs || 0, 10);
     const inputValue = e.target.value;
@@ -362,7 +392,7 @@ const AddOrderReceived = () => {
           newUsers[index].work_order_rc_sub_barcode = formattedInput;
           setUsers(newUsers);
   
-          // Only focus on next input if we haven't reached the pcs limit
+         
           const totalTCodes = users.reduce((total, user) => {
             if (user.work_order_rc_sub_barcode) {
               const codes = user.work_order_rc_sub_barcode.split(',');
@@ -418,6 +448,10 @@ const AddOrderReceived = () => {
     }
     return total;
   }, 0);
+
+ 
+
+ 
   
 if (isFetching) {
     return <LoaderComponent name=" Data" />;
@@ -676,10 +710,10 @@ if (isFetching) {
 
               {/* Barcode entries */}
               <div className="space-y-2">
-                <Label>Barcode Entries (Total Box: {users.length},Total Barcode:{totalTCodes})
-
-             
-                </Label>
+              <Label>
+          Barcode Entries (Total Box: {users.length}, Total Barcode: {totalTCodes})
+         
+        </Label>
 
            
                   <div className="space-y-1">
@@ -687,13 +721,34 @@ if (isFetching) {
                        const tCodeCount = user.work_order_rc_sub_barcode 
                        ? user.work_order_rc_sub_barcode.split(',').filter(code => code.trim().length === 6).length 
                        : 0;
-                       
+                   
+            const boxDuplicates = {};
+            if (user.work_order_rc_sub_barcode) {
+              const codes = user.work_order_rc_sub_barcode.split(',')
+                .map(code => code.trim())
+                .filter(code => code.length === 6);
+              
+              const seen = {};
+              codes.forEach(barcode => {
+                if (seen[barcode]) {
+                  boxDuplicates[barcode] = (boxDuplicates[barcode] || 1) + 1;
+                } else {
+                  seen[barcode] = true;
+                }
+              });
+            }
+            
+            const formatBoxDuplicates = () => {
+              return Object.entries(boxDuplicates).map(([barcode, count]) => (
+                `${barcode} × ${count}`
+              )).join(', ');
+            };
                       return (
                       <div key={index} className="flex items-center gap-3">
                         <div className="grid grid-cols-1  gap-3 w-full">
                         
 
-                          {/* Barcode */}
+                 
                           <div className="space-y-2 ">
                             <Label htmlFor={`barcode-${index}`}>     Box {index + 1} — T Code </Label>
                             <div className="flex gap-2">
@@ -719,9 +774,14 @@ if (isFetching) {
                                 <Trash2 className="h-4 w-4 " />
                               </Button>
                             </div>
-                       <span className="text-sm">
-                       Total barcode:  ({tCodeCount} entered)
-                       </span>
+                            <span className="text-sm">
+                      Total barcode: ({tCodeCount} entered)
+                      {Object.keys(boxDuplicates).length > 0 && (
+                        <span className="text-amber-600 ml-2">
+                          Duplicates: {formatBoxDuplicates()}
+                        </span>
+                      )}
+                    </span>
                           </div>
                           <span>
                          
@@ -730,7 +790,7 @@ if (isFetching) {
                       </div>
                  )   })}
                   </div>
-                {/* </ScrollArea> */}
+        
 
                 <Button
                   variant="outline"
