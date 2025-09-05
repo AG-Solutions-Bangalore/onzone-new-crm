@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { z } from "zod";
-import { Trash2, ChevronLeft } from "lucide-react";
+import { Trash2, ChevronLeft, Plus, Minus, Loader2 } from "lucide-react";
 
 import {
   Select,
@@ -15,9 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Toaster } from "@/components/ui/toaster";
 import BASE_URL from "@/config/BaseUrl";
 import Page from "../dashboard/page";
 import { getTodayDate } from "@/utils/currentDate";
@@ -41,7 +39,7 @@ const orderSchema = z.object({
 
 const CreateSales = () => {
   const navigate = useNavigate();
-  const inputRefs = useRef([]);
+  const inputRef = useRef(null);
   const { toast } = useToast();
   const [workorder, setWorkorder] = useState({
     work_order_sa_year: dateyear || "",
@@ -56,22 +54,31 @@ const CreateSales = () => {
     work_order_sa_remarks: "",
   });
 
-  const [users, setUsers] = useState([{ work_order_sa_sub_barcode: "" }]);
+  const [barcodes, setBarcodes] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [duplicateBarcodes, setDuplicateBarcodes] = useState({});
+  const [currentInputValue, setCurrentInputValue] = useState("");
 
- 
- const { data: retailerData ,isFetching } = useFetchRetailer();
-
+  const { data: retailerData, isFetching } = useFetchRetailer();
 
   const submitMutation = useMutation({
     mutationFn: async (data) => {
       const token = localStorage.getItem("token");
+      
+      const submissionData = {
+        ...data,
+        workorder_sub_sa_data: data.barcodes.map(barcode => ({
+          work_order_sa_sub_barcode: barcode
+        }))
+      };
+      
       const response = await fetch(`${BASE_URL}/api/create-work-order-sales`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(submissionData),
       });
       if (!response.ok) throw new Error("Failed to create sales order");
       return response.json();
@@ -100,40 +107,124 @@ const CreateSales = () => {
       [name]: value,
     });
 
+    // Clear barcodes if pcs count is reduced below current barcode count
     if (name === "work_order_sa_pcs") {
-      const boxCount = parseInt(value) || 0;
-      if (users.length > boxCount) {
-        setUsers(users.slice(0, boxCount));
+      const pcsCount = parseInt(value) || 0;
+      if (barcodes.length > pcsCount) {
+        setBarcodes(barcodes.slice(0, pcsCount));
       }
     }
   };
 
-  const onChange = (e, index) => {
-    const newUsers = [...users];
-    newUsers[index].work_order_sa_sub_barcode = e.target.value.toUpperCase();
-    setUsers(newUsers);
+  const calculateDuplicates = (barcodes) => {
+    const duplicates = {};
+    const seen = {};
+    
+    barcodes.forEach(barcode => {
+      if (seen[barcode]) {
+        duplicates[barcode] = (duplicates[barcode] || 1) + 1;
+      } else {
+        seen[barcode] = true;
+      }
+    });
+    
+    return duplicates;
+  };
+  
+  useEffect(() => {
+    setDuplicateBarcodes(calculateDuplicates(barcodes));
+  }, [barcodes]);
+
+  const handleBarcodeInputChange = (e) => {
+    setCurrentInputValue(e.target.value);
   };
 
-  const addItem = (e) => {
-    e.preventDefault();
-    const boxCount = parseInt(workorder.work_order_sa_pcs) || 0;
-    if (users.length < boxCount) {
-      const newUsers = [...users, { work_order_sa_sub_barcode: "" }];
-      setUsers(newUsers);
-      
-     
-      const newIndex = newUsers.length - 1;
-      if (inputRefs.current[newIndex]) {
-        inputRefs.current[newIndex].focus();
+  const addBarcode = async () => {
+    if (!currentInputValue.trim()) return;
+    
+    const maxPcs = parseInt(workorder.work_order_sa_pcs || 0, 10);
+    if (barcodes.length >= maxPcs) {
+      toast({
+        title: "Limit reached",
+        description: `You cannot enter more than ${maxPcs} T-codes.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validate barcode format (6 digits)
+    const barcode = currentInputValue.trim();
+    if (barcode.length !== 6) {
+      toast({
+        title: "Invalid format",
+        description: "Barcode must be exactly 6 digits",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      // Check if barcode exists in received orders
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `${BASE_URL}/api/fetch-work-order-receive-check/${barcode}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error("Barcode validation failed");
+      const data = await response.json();
+
+      if (data?.code === 200) {
+        // Add the barcode
+        setBarcodes([...barcodes, barcode]);
+        setCurrentInputValue("");
+        
+        toast({
+          title: "Success",
+          description: "Barcode added successfully",
+          variant: "default",
+        });
+        
+        // Keep focus on input
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 100);
+      } else {
+        toast({
+          title: "Error",
+          description: data?.msg || 'Barcode not found in received orders',
+          variant: "destructive",
+        });
       }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error validating barcode",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const removeUser = (index, e) => {
-    e.preventDefault(); 
-    const newUsers = users.filter((_, i) => i !== index);
-    setUsers(newUsers);
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addBarcode();
+    }
   };
+
+  const removeBarcode = useCallback((index) => {
+    const newBarcodes = [...barcodes];
+    newBarcodes.splice(index, 1);
+    setBarcodes(newBarcodes);
+  }, [barcodes]);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -141,8 +232,8 @@ const CreateSales = () => {
     const data = {
       ...workorder,
       work_order_sa_year: dateyear,
-      work_order_sa_count: users.length,
-      workorder_sub_sa_data: users,
+      work_order_sa_count: barcodes.length,
+      barcodes: barcodes,
     };
 
     try {
@@ -173,6 +264,16 @@ const CreateSales = () => {
         return;
       }
 
+      const expectedPcsCount = parseInt(workorder.work_order_sa_pcs, 10) || 0;
+      if (barcodes.length !== expectedPcsCount) {
+        toast({
+          variant: "destructive",
+          title: "Pieces Count Mismatch",
+          description: `You specified ${expectedPcsCount} pieces, but ${barcodes.length} barcodes are entered.`,
+        });
+        return;
+      }
+
       submitMutation.mutate(data);
     } catch (error) {
       toast({
@@ -183,60 +284,15 @@ const CreateSales = () => {
     }
   };
 
-  const CheckBarcode = async (e, index) => {
-    const barcodeId = e.target.value;
-    if (barcodeId.length === 6) {
-      const token = localStorage.getItem("token");
-      try {
-        const response = await fetch(
-          `${BASE_URL}/api/fetch-work-order-receive-check/${barcodeId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (!response.ok) throw new Error("Barcode validation failed");
-        const data = await response.json();
-
-        if (data?.code === 200) {
-          toast({
-            title: "Success",
-            description: "Barcode found",
-            variant: "default",
-          });
-          
-          if (users.length < parseInt(workorder.work_order_sa_pcs)) {
-            const newUsers = [...users, { work_order_sa_sub_barcode: "" }];
-            setUsers(newUsers);
-            
-            setTimeout(() => {
-              const nextIndex = index + 1;
-              if (inputRefs.current[nextIndex]) {
-                inputRefs.current[nextIndex].focus();
-              }
-            }, 0);
-          }
-        } else {
-          toast({
-            title: "Error",
-            description: "Barcode not found",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Error validating barcode",
-          variant: "destructive",
-        });
-      }
-    }
+  const isInputDisabled = () => {
+    const maxPcs = parseInt(workorder.work_order_sa_pcs || 0, 10);
+    return barcodes.length >= maxPcs;
   };
-if (isFetching) {
+
+  if (isFetching) {
     return <LoaderComponent name=" Data" />;
   }
+
   return (
     <Page>
       <div className="max-w-full mx-auto">
@@ -368,55 +424,106 @@ if (isFetching) {
               <hr className="my-2" />
 
               {/* Barcode entries */}
-              <div className="space-y-2">
-                <Label>T Code Entries (Total: {users.length})</Label>
+              <div className="space-y-1">
+                <Label className="text-sm font-medium">
+                  T Code Entries (Total: {barcodes.length} / {workorder.work_order_sa_pcs || 0})
+                </Label>
+                
+                <div className="flex items-center gap-2 mb-2">
+                  <Input
+                    ref={inputRef}
+                    value={currentInputValue}
+                    onChange={(e) => {
+                      const value = e.target.value.toUpperCase().replace(/\s/g, '');
+                      handleBarcodeInputChange({ target: { value } });
+                    }}
+                    onKeyPress={handleKeyPress}
+                    onPaste={(e) => {
+                      const pastedText = e.clipboardData.getData('text').toUpperCase().replace(/\s/g, '');
+                      e.preventDefault();
+                      document.execCommand('insertText', false, pastedText);
+                      handleBarcodeInputChange({ target: { value: pastedText } });
+                    }}
+                    placeholder="Enter 6-digit barcode"
+                    className="h-8 text-xs p-1 uppercase"
+                    disabled={isInputDisabled()}
+                    maxLength={6}
+                  />
 
-                {/* <ScrollArea className="h-64 rounded-md border p-4"> */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {users.map((user, index) => (
-                      <div key={index} className="flex items-center gap-3">
-                        <div className="flex-1 space-y-1">
-                          <Label htmlFor={`barcode-${index}`}>
-                            T Code {index + 1}
-                          </Label>
-                          <div className="flex gap-2">
-                            <Input
-                              id={`barcode-${index}`}
-                              ref={(el) => (inputRefs.current[index] = el)}
-                              name={`work_order_sa_sub_barcode_${index}`}
-                              value={user.work_order_sa_sub_barcode}
-                              onChange={(e) => {
-                                onChange(e, index);
-                                CheckBarcode(e, index);
-                              }}
-                              className="flex-1"
-                            />
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={(e) => removeUser(index, e)}
-                              disabled={users.length <= 1}
-                              type="button" 
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                  <Button
+                    type="button"
+                    onClick={addBarcode}
+                    disabled={isInputDisabled() || !currentInputValue.trim()}
+                    size="sm"
+                    className="h-8"
+                  >
+                    {loading ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Plus className="h-3 w-3" />
+                    )}
+                    Add
+                  </Button>
+                </div>
+
+                <div className="border rounded p-2 bg-gray-50">
+                  {barcodes.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1">
+                    {barcodes.reduce((uniqueBarcodes, barcode, index) => {
+                      // Only show the first occurrence of each barcode
+                      const firstIndex = barcodes.findIndex(b => b === barcode);
+                      if (firstIndex === index) {
+                        const count = barcodes.filter(b => b === barcode).length;
+                        const isDuplicate = count > 1;
+                        
+                        uniqueBarcodes.push(
+                          <div
+                            key={`${index}-${barcode}`}
+                            className={`bg-white p-1 rounded border border-gray-200 text-xs flex items-center justify-between ${
+                              isDuplicate ? 'bg-amber-100 border-amber-300' : ''
+                            }`}
+                          >
+                            <div className="flex items-center min-w-0 flex-1">
+                              <span className="text-gray-500 mr-1 w-4 text-right shrink-0">
+                                {index + 1}.
+                              </span>
+                              <span className="font-mono truncate" title={barcode}>
+                                {barcode}
+                              </span>
+                            </div>
+                  
+                            <div className="flex items-center gap-0.5">
+                              {isDuplicate && (
+                                <span className="text-xs text-amber-600">{count}</span>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                type="button"
+                                onClick={() => removeBarcode(index)}
+                                className="h-5 w-5 hover:bg-red-100 text-red-500 shrink-0 p-0.5"
+                              >
+                                <Minus className="h-2.5 w-2.5" />
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    ))}
+                        );
+                      }
+                      return uniqueBarcodes;
+                    }, [])}
                   </div>
-                {/* </ScrollArea> */}
-
-                <Button
-                  variant="outline"
-                  onClick={addItem}
-                  disabled={
-                    !workorder.work_order_sa_pcs ||
-                    users.length >= (parseInt(workorder.work_order_sa_pcs) || 0)
-                  }
-                >
-                  + Add T Code
-                </Button>
+                  ) : (
+                    <p className="text-xs text-gray-500 italic">No barcodes added yet</p>
+                  )}
+                  
+                  {Object.keys(duplicateBarcodes).length > 0 && (
+                    <div className="mt-2 text-amber-600 text-xs">
+                      Duplicate barcodes detected: {Object.entries(duplicateBarcodes)
+                        .map(([barcode, count]) => `${barcode} (${count} times)`)
+                        .join(', ')}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
@@ -435,7 +542,6 @@ if (isFetching) {
           </CardContent>
         </Card>
       </div>
-      <Toaster />
     </Page>
   );
 };
