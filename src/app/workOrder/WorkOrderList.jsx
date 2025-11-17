@@ -245,7 +245,8 @@ const WorkOrderList = () => {
           );
         },
       },
-  
+      ...(userType !== "4"
+        ? [
       {
         id: "actions",
     
@@ -359,6 +360,8 @@ const WorkOrderList = () => {
           );
         },
       },
+    ]
+    : []),
     ];
   
     // Create the table instance
@@ -443,6 +446,7 @@ const WorkOrderList = () => {
                     })}
                 </DropdownMenuContent>
               </DropdownMenu>
+              {userType != '4' && (
               <Button
                 variant="default"
                 className={`ml-2 ${ButtonConfig.backgroundColor} ${ButtonConfig.hoverBackgroundColor} ${ButtonConfig.textColor}`}
@@ -450,7 +454,16 @@ const WorkOrderList = () => {
               >
                 <SquarePlus className="h-4 w-4" /> Work Order
               </Button>
-            
+              )}
+               {userType == '4' && (
+              <Button
+                variant="default"
+                className={`ml-2 ${ButtonConfig.backgroundColor} ${ButtonConfig.hoverBackgroundColor} ${ButtonConfig.textColor}`}
+                onClick={() => navigate("/work-order/factory-create-work-order")}
+              >
+                <SquarePlus className="h-4 w-4" /> Received  Order
+              </Button>
+              )}
             </div>
             {/* table  */}
             <div className="rounded-md border">
