@@ -311,6 +311,9 @@ const OrderReceivedList = () => {
                          })}
                      </DropdownMenuContent>
                    </DropdownMenu>
+                   {localStorage.getItem('userType') != '4' && (
+
+                    
                    <Button
                      variant="default"
                      className={`ml-2 ${ButtonConfig.backgroundColor} ${ButtonConfig.hoverBackgroundColor} ${ButtonConfig.textColor}`}
@@ -318,6 +321,8 @@ const OrderReceivedList = () => {
                    >
                      <SquarePlus className="h-4 w-4" /> Order Received
                    </Button>
+                   
+                   )}
                  </div>
                  {/* table  */}
                  <div className="rounded-md border">
