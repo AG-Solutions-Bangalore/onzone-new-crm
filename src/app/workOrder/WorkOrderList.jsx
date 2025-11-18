@@ -217,9 +217,9 @@ const WorkOrderList = () => {
       },
       {
         accessorKey: "total_receive",
-        id: "Receive",
-        header: "Receive",
-        cell: ({ row }) => <div>{row.getValue("Receive")}</div>,
+        id: "Send",
+        header: "Send",
+        cell: ({ row }) => <div>{row.getValue("Send")}</div>,
       },
      
       {

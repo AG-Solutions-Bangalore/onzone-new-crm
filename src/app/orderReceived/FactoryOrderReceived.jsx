@@ -438,7 +438,7 @@ const FactoryOrderReceived = () => {
             <form className="space-y-2">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             
-                <div className="space-y-1">
+                {/* <div className="space-y-1">
                   <Label htmlFor="factory">
                     Factory <span className="text-red-500">*</span>
                     {selectedFactory && (
@@ -461,7 +461,7 @@ const FactoryOrderReceived = () => {
                           work_order_rc_id: "",
                         });
                       }}
-                      disabled={!!selectedFactory} // Disable if factory is pre-selected
+                      disabled={!!selectedFactory} 
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select factory">
@@ -485,7 +485,7 @@ const FactoryOrderReceived = () => {
                       Factory "{storedFactoryName}" not found in available factories
                     </p>
                   )}
-                </div>
+                </div> */}
 
                 {/* Work Order ID */}
                 <div className="space-y-1">
@@ -537,7 +537,7 @@ const FactoryOrderReceived = () => {
                 {/* Receive Date */}
                 <div className="space-y-1">
                   <Label htmlFor="receiveDate">
-                    Receive Date <span className="text-red-500">*</span>
+                     Date <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     type="date"

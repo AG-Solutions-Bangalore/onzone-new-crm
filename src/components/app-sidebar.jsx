@@ -179,6 +179,12 @@ export function AppSidebar({ ...props }) {
               icon: Blocks,
               isActive: false,
             },
+             {
+        title: "Order Received",
+        url: "/order-received",
+        icon: NotebookText,
+        isActive: false,
+      },
           ]
         : initialData.navMain,
   };

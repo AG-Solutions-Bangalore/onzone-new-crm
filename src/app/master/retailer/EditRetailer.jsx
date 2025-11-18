@@ -1,6 +1,3 @@
-
-
-
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -24,7 +21,6 @@ import BASE_URL from '@/config/BaseUrl'
 import Page from '@/app/dashboard/page'
 import { ErrorComponent, LoaderComponent } from '@/components/LoaderComponent/LoaderComponent'
 
-
 const statusOptions = [
   { value: "Active", label: "Active" },
   { value: "Inactive", label: "Inactive" },
@@ -35,6 +31,13 @@ const retailerTypeOptions = [
   { value: "Wholesale", label: "Wholesale" },
   { value: "Distributor", label: "Distributor" },
   { value: "Retailers", label: "Retailers" },
+]
+
+const prefixOptions = [
+  { value: "Mr", label: "Mr" },
+  { value: "Ms", label: "Ms" },
+  { value: "Mrs", label: "Mrs" },
+  { value: "Dr", label: "Dr" },
 ]
 
 const retailerSchema = z.object({
@@ -52,6 +55,13 @@ const retailerSchema = z.object({
     .or(z.literal("")),
   customer_address: z.string().optional(),
   customer_status: z.string().min(1, "Status is required"),
+  company_prefix: z.string().min(1, "Prefix is required"),
+  company_code: z.string()
+    .min(1, "Retailer code is required")
+    .regex(/^[A-Za-z0-9]+$/, "Only letters and numbers allowed"),
+  company_gst: z.string()
+    .min(1, "GST number is required")
+    .regex(/^[A-Za-z0-9]+$/, "Only letters and numbers allowed"),
 })
 
 const EditRetailer = () => {
@@ -66,10 +76,12 @@ const EditRetailer = () => {
     customer_mobile: "",
     customer_email: "",
     customer_address: "",
-    customer_status: ""
+    customer_status: "",
+    company_prefix: "",
+    company_code: "",
+    company_gst: ""
   })
 
- 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['customer', id],
     queryFn: async () => {
@@ -86,14 +98,12 @@ const EditRetailer = () => {
     retry: 1,
   })
 
-  
   useEffect(() => {
     if (data?.customer) {
       setCustomer(data.customer)
     }
   }, [data])
 
-  
   useEffect(() => {
     if (isError) {
       toast({
@@ -104,7 +114,6 @@ const EditRetailer = () => {
     }
   }, [isError, toast])
 
-  
   const updateCustomerMutation = useMutation({
     mutationFn: async (customerData) => {
       const response = await axios.put(
@@ -133,7 +142,7 @@ const EditRetailer = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.msg.includes("Duplicate") 
+        description: error.msg?.includes("Duplicate") 
           ? "Duplicate entry found" 
           : "Failed to update retailer",
       })
@@ -148,9 +157,12 @@ const EditRetailer = () => {
     return value === "" || /^[A-Za-z ]*$/.test(value)
   }
 
+  const validateAlphanumeric = (value) => {
+    return value === "" || /^[A-Za-z0-9]*$/.test(value)
+  }
+
   const onInputChange = (e) => {
     const { name, value } = e.target
-    
     
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }))
@@ -164,13 +176,16 @@ const EditRetailer = () => {
       if (validateOnlyText(value)) {
         setCustomer(prev => ({ ...prev, [name]: value }))
       }
+    } else if (name === "company_code" || name === "company_gst") {
+      if (validateAlphanumeric(value)) {
+        setCustomer(prev => ({ ...prev, [name]: value }))
+      }
     } else {
       setCustomer(prev => ({ ...prev, [name]: value }))
     }
   }
 
   const onSelectChange = (name, value) => {
-    
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }))
     }
@@ -192,7 +207,6 @@ const EditRetailer = () => {
         })
         setErrors(fieldErrors)
         
-       
         toast({
           variant: "destructive",
           title: "Validation Error",
@@ -202,22 +216,22 @@ const EditRetailer = () => {
     }
   }
 
-   if (isLoading) {
-     return <LoaderComponent name="Loading retailer data" />;
-   }
- 
-   if (isError) {
-     return (
-       <ErrorComponent
-         message="Error Fetching retailer Data"
-         refetch={refetch}
-       />
-     );
-   }
+  if (isLoading) {
+    return <LoaderComponent name="Loading retailer data" />;
+  }
+
+  if (isError) {
+    return (
+      <ErrorComponent
+        message="Error Fetching retailer Data"
+        refetch={refetch}
+      />
+    );
+  }
 
   return (
     <Page>
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
+      <div className="container mx-auto px-4  max-w-full">
         {/* Header */}
         <div className="flex items-center justify-between bg-card p-4 rounded-lg shadow-sm mb-6">
           <h1 className="text-xl font-bold">Edit Retailer</h1>
@@ -232,6 +246,29 @@ const EditRetailer = () => {
             <form onSubmit={onSubmit} className="space-y-6">
               {/* Form Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {/* Prefix */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Prefix *</Label>
+                  <Select
+                    value={customer.company_prefix}
+                    onValueChange={(value) => onSelectChange('company_prefix', value)}
+                  >
+                    <SelectTrigger className={errors.company_prefix ? "border-destructive" : ""}>
+                      <SelectValue placeholder="Select prefix" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {prefixOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.company_prefix && (
+                    <p className="text-xs text-destructive">{errors.company_prefix}</p>
+                  )}
+                </div>
+
                 {/* Retailer Name */}
                 <div className="space-y-2">
                   <Label htmlFor="customer_name" className="text-sm font-medium">
@@ -247,6 +284,24 @@ const EditRetailer = () => {
                   />
                   {errors.customer_name && (
                     <p className="text-xs text-destructive">{errors.customer_name}</p>
+                  )}
+                </div>
+
+                {/* Retailer Code */}
+                <div className="space-y-2">
+                  <Label htmlFor="company_code" className="text-sm font-medium">
+                    Retailer Code *
+                  </Label>
+                  <Input
+                    id="company_code"
+                    name="company_code"
+                    value={customer.company_code}
+                    onChange={onInputChange}
+                    placeholder="Enter retailer code"
+                    className={errors.company_code ? "border-destructive" : ""}
+                  />
+                  {errors.company_code && (
+                    <p className="text-xs text-destructive">{errors.company_code}</p>
                   )}
                 </div>
 
@@ -270,6 +325,24 @@ const EditRetailer = () => {
                   </Select>
                   {errors.customer_type && (
                     <p className="text-xs text-destructive">{errors.customer_type}</p>
+                  )}
+                </div>
+
+                {/* GST Number */}
+                <div className="space-y-2">
+                  <Label htmlFor="company_gst" className="text-sm font-medium">
+                    GST Number *
+                  </Label>
+                  <Input
+                    id="company_gst"
+                    name="company_gst"
+                    value={customer.company_gst}
+                    onChange={onInputChange}
+                    placeholder="Enter GST number"
+                    className={errors.company_gst ? "border-destructive" : ""}
+                  />
+                  {errors.company_gst && (
+                    <p className="text-xs text-destructive">{errors.company_gst}</p>
                   )}
                 </div>
 
@@ -311,20 +384,6 @@ const EditRetailer = () => {
                   )}
                 </div>
 
-                {/* Address */}
-                <div className="space-y-2">
-                  <Label htmlFor="customer_address" className="text-sm font-medium">
-                    Address
-                  </Label>
-                  <Input
-                    id="customer_address"
-                    name="customer_address"
-                    value={customer.customer_address}
-                    onChange={onInputChange}
-                    placeholder="Enter address"
-                  />
-                </div>
-
                 {/* Status */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Status *</Label>
@@ -346,6 +405,20 @@ const EditRetailer = () => {
                   {errors.customer_status && (
                     <p className="text-xs text-destructive">{errors.customer_status}</p>
                   )}
+                </div>
+
+                {/* Address */}
+                <div className="space-y-2 md:col-span-2 xl:col-span-3">
+                  <Label htmlFor="customer_address" className="text-sm font-medium">
+                    Address
+                  </Label>
+                  <Input
+                    id="customer_address"
+                    name="customer_address"
+                    value={customer.customer_address}
+                    onChange={onInputChange}
+                    placeholder="Enter address"
+                  />
                 </div>
               </div>
 
