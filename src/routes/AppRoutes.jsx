@@ -11,6 +11,7 @@ import OrderFormList from "@/app/order-form/OrderFormList";
 import EditOrderForm from "@/app/order-form/EditOrderForm";
 import PublicCreateOrderForm from "@/app/order-form/PublicCreateOrderForm";
 import CreateStock from "@/app/stock/CreateStock";
+import FactoryOrderReceived from "@/app/orderReceived/FactoryOrderReceived";
 // import Home from "@/app/home/Home";
 // import BrandList from "@/app/master/brand/BrandList";
 // import EditBrand from "@/app/master/brand/EditBrand";
@@ -161,6 +162,10 @@ function AppRoutes() {
         <Route
           path="/work-order/create-work-order"
           element={<CreateWorkOrder />}
+        />
+        <Route
+          path="/work-order/factory-create-work-order"
+          element={<FactoryOrderReceived />}
         />
         <Route
           path="/work-order/edit-work-order/:id"
