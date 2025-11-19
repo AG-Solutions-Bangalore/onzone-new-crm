@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ChevronLeft, Send } from "lucide-react";
+import { ChevronLeft, Send, Trash2, Minus } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import * as z from "zod";
-import axios from "axios"; // Missing import
+import axios from "axios";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import {
   LoaderComponent,
@@ -58,6 +68,13 @@ const EditSales = () => {
 
   const useTemplate = { id: "", work_order_sa_sub_barcode: "" };
   const [users, setUsers] = useState([useTemplate]);
+
+  // Alert Dialog States
+  const [deleteDialog, setDeleteDialog] = useState({
+    isOpen: false,
+    data: null, // { index, barcode, dbId }
+    message: ""
+  });
 
   const {
     data: workOrderData,
@@ -133,6 +150,7 @@ const EditSales = () => {
       }
     }
   }, [workOrderData]);
+
   const validateOnlyDigits = (inputtxt) => {
     const phoneno = /^\d+$/;
     return phoneno.test(inputtxt) || inputtxt.length === 0;
@@ -161,6 +179,64 @@ const EditSales = () => {
     setUsers((prev) =>
       prev.map((user, i) => (i === index ? { ...user, [name]: value } : user))
     );
+  };
+
+  // Show confirmation dialog for barcode deletion
+  const confirmBarcodeDelete = (index, barcode, dbId) => {
+    setDeleteDialog({
+      isOpen: true,
+      data: { index, barcode, dbId },
+      message: dbId 
+        ? `Are you sure you want to delete barcode "${barcode}" from the database?`
+        : `Are you sure you want to remove barcode "${barcode}"?`
+    });
+  };
+
+  // Handle confirmed deletion
+  const handleConfirmedDelete = async () => {
+    const { index, barcode, dbId } = deleteDialog.data;
+
+    // If this barcode exists in the database, delete it via API
+    if (dbId) {
+      const success = await deleteBarcodeFromDB(dbId);
+      if (!success) return;
+    }
+    
+    // Remove from local state
+    const newUsers = [...users];
+    newUsers.splice(index, 1);
+    setUsers(newUsers);
+
+    toast({
+      title: dbId ? "Deleted" : "Removed",
+      description: `Barcode ${dbId ? 'deleted from database' : 'removed'} successfully`,
+      variant: "default",
+    });
+
+    setDeleteDialog({ isOpen: false, data: null, message: "" });
+  };
+
+  // Delete individual barcode from database
+  const deleteBarcodeFromDB = async (barcodeId) => {
+    if (!barcodeId) return true;
+    
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(
+        `${BASE_URL}/api/delete-work-order-sales-sub/${barcodeId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      return true;
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete barcode from database",
+      });
+      return false;
+    }
   };
 
   const updateOrderSalesMutation = useMutation({
@@ -243,16 +319,6 @@ const EditSales = () => {
 
     updateOrderSalesMutation.mutate(data);
   };
-
-  // Debug logging
-  // console.log({
-  //   id,
-  //   isLoading,
-  //   isError,
-  //   error: error?.message,
-  //   workOrderData,
-  //   BASE_URL
-  // });
 
   if (isLoading) {
     return <LoaderComponent name="Work Order Sales Data" />;
@@ -389,24 +455,44 @@ const EditSales = () => {
                   {users.map((user, index) => (
                     <div
                       key={index}
-                      className="border-l-4 border-l-blue-500 px-2"
+                      className="border-l-4 border-l-blue-500 px-2 bg-gray-50 p-3 rounded"
                     >
-                      <div className="grid grid-cols-1 gap-4">
-                        <Input
-                          type="hidden"
-                          name="id"
-                          value={user.id}
-                          onChange={(e) => onChange(e, index)}
-                        />
-
-                        <div className="space-y-2">
-                          <Label htmlFor={`tcode_${index}`}>T Code</Label>
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1">
                           <Input
-                            id={`tcode_${index}`}
-                            name="work_order_sa_sub_barcode"
-                            value={user.work_order_sa_sub_barcode}
+                            type="hidden"
+                            name="id"
+                            value={user.id}
                             onChange={(e) => onChange(e, index)}
                           />
+
+                          <div className="space-y-2">
+                            <Label htmlFor={`tcode_${index}`}>T Code</Label>
+                            <Input
+                              id={`tcode_${index}`}
+                              name="work_order_sa_sub_barcode"
+                              value={user.work_order_sa_sub_barcode}
+                              onChange={(e) => onChange(e, index)}
+                              placeholder="Enter T Code"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex items-end">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            type="button"
+                            onClick={() => confirmBarcodeDelete(index, user.work_order_sa_sub_barcode, user.id)}
+                            className="h-10 w-10 hover:text-red-800 mt-6"
+                            title={user.id ? "Delete from database" : "Remove locally"}
+                          >
+                            {user.id ? (
+                              <Trash2 className="h-4 w-4" />
+                            ) : (
+                              <Minus className="h-4 w-4" />
+                            )}
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -441,6 +527,27 @@ const EditSales = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialog.isOpen} onOpenChange={(open) => !open && setDeleteDialog({ isOpen: false, data: null, message: "" })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteDialog.message}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmedDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteDialog.data?.dbId ? 'Delete' : 'Remove'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Page>
   );
 };

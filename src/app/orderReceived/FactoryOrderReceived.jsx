@@ -26,7 +26,7 @@ import { useFetchFactory } from "@/hooks/useApi";
 import { LoaderComponent } from "@/components/LoaderComponent/LoaderComponent";
 import { Textarea } from "@/components/ui/textarea";
 
-// Zod schema for validation
+
 const orderSchema = z.object({
   work_order_rc_year: z.string(),
   work_order_rc_date: z.string().min(1, "Date is required"),
@@ -593,10 +593,10 @@ const FactoryOrderReceived = () => {
                 </div>
               </div>
 
-              {/* Rest of your component remains the same */}
+            
               <hr className="my-2" />
 
-              {/* Barcode entries section */}
+             
               <div className="space-y-1">
                 <Label className="text-sm font-medium">
                   Barcode Entries (Total Box: {users.length}, Total Barcode: {totalTCodes})
