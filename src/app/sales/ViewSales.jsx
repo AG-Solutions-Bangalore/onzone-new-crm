@@ -175,7 +175,7 @@ const ViewSales = () => {
                           className="print-container bg-white  p-8 border border-gray-300"
                         >
                 
-                          <div className="copy relative h-[90vh]">
+                          <div className="copy relative h-[100vh] print:h-[90vh]">
                           {/* Invoice Header */}
                           <div className="invoice-header mb-8">
                             <div className="flex justify-between items-center border-b pb-4">
@@ -256,7 +256,7 @@ const ViewSales = () => {
                 
                          
                           </div>
-                          <div className="copy relative h-[90vh]">
+                          <div className="copy relative h-[100vh] print:h-[90vh]">
                              {/* Invoice Header */}
                           <div className="invoice-header mb-8">
                             <div className="flex justify-between items-center border-b pb-4">
