@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   Send,
@@ -7,7 +7,9 @@ import {
   Calendar,
   Factory,
   ChevronLeft,
-  Minus,
+  Trash2,
+  Plus,
+  Loader2,
 } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import * as z from "zod";
@@ -25,6 +27,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import BASE_URL from "@/config/BaseUrl";
@@ -50,19 +62,14 @@ const formSchema = z.object({
   work_order_rc_fabric_count: z.string().optional(),
   work_order_rc_remarks: z.string().optional(),
   work_order_rc_count: z.number().optional(),
-  workorder_sub_rc_data: z.array(
-    z.object({
-      id: z.number().optional(),
-      work_order_rc_sub_barcode: z.string().min(1, "T Code is required"),
-      work_order_rc_sub_box: z.string().min(1, "Box is required"),
-    })
-  ),
 });
 
 const EditOrderReceived = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const inputRefs = useRef([]);
+  
   const [workorder, setWorkOrderReceive] = useState({
     work_order_rc_factory_no: "",
     work_order_rc_id: "",
@@ -77,20 +84,30 @@ const EditOrderReceived = () => {
     work_order_rc_fabric_count: "",
     work_order_rc_count: "",
     work_order_rc_remarks: "",
+    work_order_rc_ref: "",
   });
-  const useTemplate = {
-    id: "",
-    work_order_rc_sub_barcode: "",
-    work_order_rc_sub_box: "",
-  };
-  const [users, setUsers] = useState([useTemplate]);
-  const [isInitialDataLoaded, setIsInitialDataLoaded] = useState(false);
+
+  const [users, setUsers] = useState([
+    { id: "", work_order_rc_sub_box: 1, barcodes: [], dbIds: [] }
+  ]);
+  
+  const [loadingStates, setLoadingStates] = useState({});
+  const [duplicateBarcodes, setDuplicateBarcodes] = useState({});
+  const [activeInputIndex, setActiveInputIndex] = useState(null);
+  const [currentInputValue, setCurrentInputValue] = useState("");
   const [highlightedItem, setHighlightedItem] = useState(null);
+
+  // Alert Dialog States
+  const [deleteDialog, setDeleteDialog] = useState({
+    isOpen: false,
+    data: null,
+    message: ""
+  });
 
   // Fetch work order received data
   const {
     data: workOrderData,
-    isLoading,
+    isFetching,
     isError,
     refetch,
   } = useQuery({
@@ -107,8 +124,9 @@ const EditOrderReceived = () => {
     },
   });
 
+  // Transform API data to match our state structure
   useEffect(() => {
-    if (workOrderData && !isInitialDataLoaded) {
+    if (workOrderData) {
       const { workorderrc, workorderrcsub } = workOrderData;
 
       if (workorderrc) {
@@ -129,67 +147,243 @@ const EditOrderReceived = () => {
             workorderrc.work_order_rc_fabric_count || "",
           work_order_rc_count: workorderrc.work_order_rc_count || "",
           work_order_rc_remarks: workorderrc.work_order_rc_remarks || "",
+          work_order_rc_ref: workorderrc.work_order_rc_ref || "",
         });
       }
+
+      // Transform workorderrcsub data to match our users state structure
       if (workorderrcsub && workorderrcsub.length > 0) {
-        setUsers(
-          workorderrcsub.map((item) => ({
-            id: item.id || Date.now() + Math.random(), // Ensure unique id
-            work_order_rc_sub_barcode: item.work_order_rc_sub_barcode || "",
-            work_order_rc_sub_box: item.work_order_rc_sub_box || "",
-          }))
-        );
+        // Group by box number
+        const boxGroups = workorderrcsub.reduce((acc, item) => {
+          const boxNo = item.work_order_rc_sub_box || "1";
+          if (!acc[boxNo]) {
+            acc[boxNo] = {
+              id: `box-${boxNo}`,
+              work_order_rc_sub_box: parseInt(boxNo),
+              barcodes: [],
+              dbIds: []
+            };
+          }
+          if (item.work_order_rc_sub_barcode) {
+            acc[boxNo].barcodes.push(item.work_order_rc_sub_barcode);
+            acc[boxNo].dbIds.push(item.id);
+          }
+          return acc;
+        }, {});
+
+        // Convert to array and sort by box number
+        const usersArray = Object.values(boxGroups)
+          .sort((a, b) => a.work_order_rc_sub_box - b.work_order_rc_sub_box)
+          .map((box, index) => ({
+            ...box,
+            id: box.id || `box-${index + 1}`
+          }));
+
+        setUsers(usersArray);
       } else {
-        setUsers([useTemplate]);
+        setUsers([{ id: "box-1", work_order_rc_sub_box: 1, barcodes: [], dbIds: [] }]);
       }
-
-      setIsInitialDataLoaded(true);
     }
-  }, [workOrderData, isInitialDataLoaded]);
+  }, [workOrderData]);
 
-  const validateOnlyDigits = (inputtxt) => {
-    const phoneno = /^\d+$/;
-    return phoneno.test(inputtxt) || inputtxt.length === 0;
-  };
+  // Calculate and update box and pieces count whenever users state changes
+  useEffect(() => {
+    const totalBoxes = users.length;
+    const totalPieces = users.reduce((total, user) => total + user.barcodes.length, 0);
+    
+    setWorkOrderReceive(prev => ({
+      ...prev,
+      work_order_rc_box: totalBoxes.toString(),
+      work_order_rc_pcs: totalPieces.toString()
+    }));
+  }, [users]);
+
+  // Calculate duplicate barcodes
+  const calculateDuplicates = useCallback((users) => {
+    const allBarcodes = [];
+    
+    users.forEach(user => {
+      user.barcodes.forEach(barcode => {
+        if (barcode) {
+          allBarcodes.push(barcode);
+        }
+      });
+    });
+    
+    const duplicates = {};
+    const seen = {};
+    
+    allBarcodes.forEach(barcode => {
+      if (seen[barcode]) {
+        duplicates[barcode] = (duplicates[barcode] || 1) + 1;
+      } else {
+        seen[barcode] = true;
+      }
+    });
+    
+    return duplicates;
+  }, []);
+
+  useEffect(() => {
+    setDuplicateBarcodes(calculateDuplicates(users));
+  }, [users, calculateDuplicates]);
 
   const onInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Don't allow manual changes to box and pcs fields since they're auto-calculated
     if (name === "work_order_rc_box" || name === "work_order_rc_pcs") {
-      if (validateOnlyDigits(value)) {
-        setWorkOrderReceive((prev) => ({
-          ...prev,
-          [name]: value,
-        }));
+      toast({
+        title: "Auto-calculated Field",
+        description: "This field is automatically calculated from barcode entries",
+        variant: "default",
+      });
+      return;
+    }
+    
+    setWorkOrderReceive((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleBarcodeInputChange = (e, index) => {
+    setCurrentInputValue(e.target.value);
+  };
+
+  const addBarcodeToBox = async (index) => {
+    if (!currentInputValue.trim()) return;
+    setLoadingStates((prev) => ({ ...prev, [index]: true }));
+
+    try {
+      // Validate barcode format (6 characters)
+      const barcode = currentInputValue.trim().toUpperCase();
+      if (barcode.length !== 6) {
+        toast({
+          title: "Invalid format",
+          description: "Barcode must be exactly 6 characters",
+          variant: "destructive",
+        });
+        return;
       }
-    } else {
-      setWorkOrderReceive((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
+
+      // Add the barcode to the box (without dbId for new barcodes)
+      const newUsers = [...users];
+      newUsers[index].barcodes.push(barcode);
+      newUsers[index].dbIds.push(null);
+      setUsers(newUsers);
+      setCurrentInputValue("");
+      
+      toast({
+        title: "Success",
+        description: "Barcode added successfully",
+        variant: "default",
+      });
+
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error adding barcode",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, [index]: false }));
     }
   };
 
-  const onChange = (e, userId) => {
-    const { name, value } = e.target;
-    setUsers((prev) =>
-      prev.map((user) =>
-        user.id === userId ? { ...user, [name]: value } : user
-      )
-    );
+  const handleKeyPress = (e, index) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addBarcodeToBox(index);
+    }
   };
 
-  const handleCardClick = (userId, e) => {
-    e.stopPropagation();
-    setHighlightedItem(userId);
+  // Show confirmation dialog for box deletion
+  const confirmBoxDelete = (index) => {
+    const boxNumber = users[index].work_order_rc_sub_box;
+    const barcodeCount = users[index].barcodes.length;
+    const hasDbEntries = users[index].dbIds.some(id => id !== null);
+    
+    setDeleteDialog({
+      isOpen: true,
+      data: { index, boxNumber, barcodeCount, hasDbEntries },
+      message: hasDbEntries 
+        ? `Are you sure you want to delete Box ${boxNumber}? This will remove ${barcodeCount} barcode(s) from the database.`
+        : `Are you sure you want to remove Box ${boxNumber}? This will remove ${barcodeCount} barcode(s).`
+    });
   };
 
-  useEffect(() => {
-    const handleClickOutside = () => setHighlightedItem(null);
-    document.addEventListener("click", handleClickOutside);
-    return () => {
-      document.removeEventListener("click", handleClickOutside);
-    };
-  }, []);
+  // Handle confirmed deletion
+  const handleConfirmedDelete = async () => {
+    const { index, boxNumber, hasDbEntries } = deleteDialog.data;
+
+    // If this box has existing database IDs, delete them via API
+    if (hasDbEntries) {
+      const success = await deleteBoxFromDB(boxNumber);
+      if (!success) return;
+    }
+    
+    // Remove from local state
+    await removeUser(index);
+
+    setDeleteDialog({ isOpen: false, data: null, message: "" });
+  };
+
+  // Delete entire box from database
+  const deleteBoxFromDB = async (boxNumber) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.delete(
+        `${BASE_URL}/api/delete-work-order-received-box-sub`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          data: {
+            work_order_rc_ref: workorder.work_order_rc_ref,
+            work_order_rc_sub_box: boxNumber.toString()
+          }
+        }
+      );
+      return true;
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete box from database",
+      });
+      return false;
+    }
+  };
+
+  // Actual box removal function
+  const removeUser = async (index) => {
+    // Remove from local state
+    const newUsers = users.filter((_, i) => i !== index);
+    const updatedUsers = newUsers.map((u, i) => ({
+      ...u,
+      work_order_rc_sub_box: i + 1,
+    }));
+    setUsers(updatedUsers);
+
+    toast({
+      title: "Success",
+      description: "Box removed successfully",
+      variant: "default",
+    });
+  };
+
+  const addItem = (e) => {
+    e.preventDefault();
+    const newUsers = [
+      ...users,
+      { 
+        id: `box-${users.length + 1}`, 
+        work_order_rc_sub_box: users.length + 1, 
+        barcodes: [],
+        dbIds: []
+      },
+    ];
+    setUsers(newUsers);
+  };
 
   const updateOrderReceivedMutation = useMutation({
     mutationFn: async (data) => {
@@ -229,18 +423,28 @@ const EditOrderReceived = () => {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    const data = {
+    
+    // Prepare data for submission
+    const submissionData = {
       work_order_rc_dc_no: workorder.work_order_rc_dc_no,
       work_order_rc_dc_date: workorder.work_order_rc_dc_date,
-      work_order_rc_box: workorder.work_order_rc_box,
-      work_order_rc_pcs: workorder.work_order_rc_pcs,
+      work_order_rc_box: parseInt(workorder.work_order_rc_box),
+      work_order_rc_pcs: parseInt(workorder.work_order_rc_pcs),
       work_order_rc_fabric_received: workorder.work_order_rc_fabric_received,
       work_order_rc_fabric_count: workorder.work_order_rc_fabric_count,
       work_order_rc_remarks: workorder.work_order_rc_remarks,
-      workorder_sub_rc_data: users,
-      work_order_rc_count: workorder.work_order_rc_count,
+      work_order_rc_count: parseInt(workorder.work_order_rc_pcs),
+      workorder_sub_rc_data: users.flatMap(user => 
+        user.barcodes.map((barcode, barcodeIndex) => ({
+          id: user.dbIds[barcodeIndex] || null,
+          work_order_rc_sub_box: user.work_order_rc_sub_box.toString(),
+          work_order_rc_sub_barcode: barcode
+        }))
+      )
     };
-    const validation = formSchema.safeParse(data);
+  
+    // Validation
+    const validation = formSchema.safeParse(submissionData);
     if (!validation.success) {
       toast({
         variant: "destructive",
@@ -265,18 +469,40 @@ const EditOrderReceived = () => {
           </div>
         ),
       });
-      const firstError = validation.error.errors[0];
-      if (firstError.path[0] === "workorder_sub_rc_data") {
-        setHighlightedItem(users[firstError.path[1]]?.id);
-      }
       return;
     }
-    updateOrderReceivedMutation.mutate(data);
+  
+    // Additional validations - minimum requirements
+    const totalBoxes = users.length;
+    const totalBarcodes = users.reduce((total, user) => total + user.barcodes.length, 0);
+    
+    if (totalBoxes === 0) {
+      toast({
+        variant: "destructive",
+        title: "No Boxes Added",
+        description: "Please add at least one box with barcodes",
+      });
+      return;
+    }
+    
+    if (totalBarcodes === 0) {
+      toast({
+        variant: "destructive",
+        title: "No Barcodes Added",
+        description: "Please add at least one barcode",
+      });
+      return;
+    }
+  
+    updateOrderReceivedMutation.mutate(submissionData);
   };
 
-  if (isLoading || !isInitialDataLoaded) {
+  const totalTCodes = users.reduce((total, user) => total + user.barcodes.length, 0);
+
+  if (isFetching) {
     return <LoaderComponent name="Work Order Received Data" />;
   }
+  
   if (isError) {
     return (
       <ErrorComponent
@@ -391,7 +617,10 @@ const EditOrderReceived = () => {
                     value={workorder.work_order_rc_box}
                     onChange={onInputChange}
                     required
+                    disabled
+                    className="bg-gray-100 font-semibold"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Auto-calculated from boxes below</p>
                 </div>
                 <div className="">
                   <Label htmlFor="work_order_rc_pcs">
@@ -403,7 +632,10 @@ const EditOrderReceived = () => {
                     value={workorder.work_order_rc_pcs}
                     onChange={onInputChange}
                     required
+                    disabled
+                    className="bg-gray-100 font-semibold"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Auto-calculated from barcodes below</p>
                 </div>
                 <div className="">
                   <Label htmlFor="work_order_rc_fabric_received">
@@ -479,143 +711,147 @@ const EditOrderReceived = () => {
                   />
                 </div>
               </div>
+
               <Separator />
-             
-              <div className="">
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-semibold text-lg">Item Details</h4>
-                  <Badge variant="outline" className="text-xs">
-                    {users.length} items
-                  </Badge>
-                </div>
-                {users.length > 0 ? (
-                  Object.entries(
-                    users.reduce((acc, user) => {
-                      const box = user.work_order_rc_sub_box || "No Box";
-                      if (!acc[box]) acc[box] = [];
-                      acc[box].push(user);
-                      return acc;
-                    }, {})
-                  ).map(([box, boxUsers], boxIndex) => {
-                    const barcodeGroups = boxUsers.reduce((acc, user) => {
-                      const barcode =
-                        user.work_order_rc_sub_barcode || "No Barcode";
-                      if (!acc[barcode]) acc[barcode] = [];
-                      acc[barcode].push(user);
+
+              {/* Barcode entries */}
+              <div className="space-y-1">
+                <Label className="text-sm font-medium">
+                  Barcode Entries (Total Box: {users.length}, Total Barcode: {totalTCodes})
+                </Label>
+                <p className="text-xs text-gray-500 mb-2">
+                  Add boxes and barcodes below. The "No of Box" and "Total No of Pcs" fields above will be automatically updated.
+                </p>
+                <div className="space-y-2">
+                  {users.map((user, index) => {
+                    // Group barcodes by value and count duplicates
+                    const barcodeGroups = user.barcodes.reduce((acc, barcode) => {
+                      if (!acc[barcode]) {
+                        acc[barcode] = { barcode, count: 1 };
+                      } else {
+                        acc[barcode].count += 1;
+                      }
                       return acc;
                     }, {});
 
-                    return (
-                      <div key={boxIndex} className="mb-4">
-                        <div className="flex items-center justify-between bg-gray-100 px-3 py-1 rounded-md mb-2">
-                          <span className="text-sm font-semibold">
-                            Box {box}
-                          </span>
-                          <Badge variant="secondary" className="text-xs">
-                            {boxUsers.length} codes
-                          </Badge>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-2">
-                          {Object.entries(barcodeGroups).map(
-                            ([barcode, barcodeUsers]) => {
-                              const count = barcodeUsers.length;
-                              const firstUser = barcodeUsers[0];
+                    const uniqueBarcodes = Object.values(barcodeGroups);
 
-                              return (
+                    return (
+                      <div key={user.id} className="border rounded p-2 bg-gray-50">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <Label className="text-xs font-medium">Box {user.work_order_rc_sub_box}</Label>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              ref={(el) => (inputRefs.current[index] = el)}
+                              value={activeInputIndex === index ? currentInputValue : ""}
+                              onChange={(e) => {
+                                const value = e.target.value.toUpperCase().replace(/\s/g, '');
+                                handleBarcodeInputChange({ target: { value } }, index);
+                              }}
+                              onKeyPress={(e) => handleKeyPress(e, index)}
+                              onFocus={() => {
+                                setActiveInputIndex(index);
+                                setCurrentInputValue("");
+                              }}
+                              onPaste={(e) => {
+                                const pastedText = e.clipboardData.getData('text').toUpperCase().replace(/\s/g, '');
+                                e.preventDefault();
+                                document.execCommand('insertText', false, pastedText);
+                                handleBarcodeInputChange({ target: { value: pastedText } }, index);
+                              }}
+                              placeholder="6-digit barcode"
+                              className="h-8 text-xs p-1 uppercase bg-blue-200 text-black"
+                              maxLength={6}
+                            />
+
+                            <Button
+                              type="button"
+                              onClick={() => addBarcodeToBox(index)}
+                              disabled={
+                                !currentInputValue.trim() ||
+                                activeInputIndex !== index
+                              }
+                              size="sm"
+                              className="h-8 w-8 p-1"
+                            >
+                              {loadingStates[index] ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Plus className="h-3 w-3" />
+                              )}
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              type="button"
+                              onClick={() => confirmBoxDelete(index)}
+                              className="h-8 w-8 hover:text-red-800 p-1"
+                              disabled={users.length <= 1}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="mb-1">
+                          {uniqueBarcodes.length > 0 ? (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1">
+                              {uniqueBarcodes.map((barcodeGroup, barcodeIndex) => (
                                 <div
-                                  key={firstUser.id}
-                                  onClick={(e) =>
-                                    handleCardClick(firstUser.id, e)
-                                  }
-                                  className={`relative p-1 flex flex-col gap-1 rounded-lg border shadow-sm transition-colors duration-200 ${
-                                    highlightedItem === firstUser.id
-                                      ? "bg-blue-50/60 border-2 border-blue-500"
-                                      : ""
+                                  key={`${index}-${barcodeGroup.barcode}-${barcodeIndex}`}
+                                  className={`bg-white p-1 rounded border border-gray-200 text-xs flex items-center justify-between ${
+                                    highlightedItem === barcodeGroup.barcode ? 'bg-blue-100 border-2 border-blue-600' : ''
+                                  } ${
+                                    barcodeGroup.count > 1 ? 'bg-amber-50 border-amber-200' : ''
                                   }`}
                                 >
-                                         {count > 1 && (
-                                   <div className="absolute top-0 right-0 px-1 bg-amber-500 border rounded-b-full">
-                                   <span className="text-xs w-full text-black">
-                                        {count}
-                                      </span>
-                            </div>
-                                         )}
-                                           {count > 1 && (
-                                    <div className=" p-0.5 bg-amber-500 border rounded-md flex items-center justify-between gap-1">
-                                      {/* <span className="text-xs w-full text-black">
-                                        {count}
-                                      </span> */}
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                        
-                                          const firstOccurrenceId = users.find(
-                                            (u) => u.work_order_rc_sub_barcode === barcode
-                                          )?.id;
-                                          setUsers((prev) => prev.filter((u) => u.id !== firstOccurrenceId));
-                                        }}
-                                        className="text-sm bg-white  w-full hover:text-red-500 flex items-center justify-center text-black "
-                                      >
-                                        <Minus className="h-3 w-5 text-center" />
-                                      </button>
-                                    </div>
-                                  )}
-                                  <div  className="mt-1">
-                                
-                                    <Input
-                                      id={`tcode_${box}_${firstUser.id}`}
-                                      name="work_order_rc_sub_barcode"
-                                      value={
-                                        firstUser.work_order_rc_sub_barcode
-                                      }
-                                      onChange={(e) => {
-                                        const newBarcode = e.target.value;
-
-                                        setUsers((prev) =>
-                                          prev.map((u) =>
-                                            u.work_order_rc_sub_barcode ===
-                                            barcode
-                                              ? {
-                                                  ...u,
-                                                  work_order_rc_sub_barcode:
-                                                    newBarcode,
-                                                }
-                                              : u
-                                          )
-                                        );
-                                      }}
-                                      className="h-7 text-sm "
-                                      required
-                                    />
+                                  <div className="flex items-center min-w-0 flex-1">
+                                    <span className="text-gray-500 mr-1 w-4 text-right shrink-0">
+                                      {barcodeIndex + 1}.
+                                    </span>
+                                    <span className="font-mono truncate" title={barcodeGroup.barcode}>
+                                      {barcodeGroup.barcode}
+                                      {barcodeGroup.count > 1 && (
+                                        <span className="text-amber-600 ml-1">× {barcodeGroup.count}</span>
+                                      )}
+                                    </span>
                                   </div>
-                                 
-                                  <Input
-                                    type="hidden"
-                                    name="id"
-                                    value={firstUser.id}
-                                  />
                                 </div>
-                              );
-                            }
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-500 italic">No barcodes added yet</p>
                           )}
+                          
+                          {/* Show duplicate warning if any barcode appears more than once in this box */}
+                          {uniqueBarcodes.some(bg => bg.count > 1) && (
+                            <div className="mt-1 text-amber-600 text-xs">
+                              Duplicate barcodes in this box
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="text-xs text-gray-500">
+                          {user.barcodes.length} barcode(s) total
                         </div>
                       </div>
                     );
-                  })
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-32 border border-dashed rounded-lg bg-gray-50">
-                    <div className="bg-gray-100 p-2 rounded-full mb-2">
-                      <Package className="h-4 w-4 text-gray-500" />
-                    </div>
-                    <p className="text-xs text-gray-500 mb-2">
-                      No items added yet
-                    </p>
-                  </div>
-                )}
+                  })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  onClick={addItem}
+                  size="sm"
+                  className="mt-1 h-8"
+                >
+                  + Add Box
+                </Button>
               </div>
 
               <Separator />
+              
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <Button
@@ -641,6 +877,27 @@ const EditOrderReceived = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialog.isOpen} onOpenChange={(open) => !open && setDeleteDialog({ isOpen: false, data: null, message: "" })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteDialog.message}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmedDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete Box
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Page>
   );
 };

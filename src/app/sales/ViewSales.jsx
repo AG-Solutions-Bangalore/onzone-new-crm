@@ -80,6 +80,7 @@ const ViewSales = () => {
     const { toast } = useToast();
     const componentRef = useRef(null);
     const navigate = useNavigate();
+
   
   
    
@@ -110,10 +111,13 @@ const ViewSales = () => {
           workOrder: response.data.workordersales || {},
           workOrderSub: response.data.workordersalessub || [],
           workOrderFooter: response.data.workordersalesfooter || {},
+          workOrderDataMin: response.data.closest_min_combo || '',
+          workOrderDataMax: response.data.closest_max_combo || '',
+          
         };
       },
     });
-  
+  console.log('data',data)
   
 
     if (isLoading) {
@@ -139,25 +143,31 @@ const ViewSales = () => {
    <Page>
       <div className="max-w-full mx-auto">
              <Card className="shadow-lg">
-               <CardHeader className="border-b">
-                 <div className="flex items-center justify-between">
-                   <CardTitle className="text-lg font-semibold">
-                   Work Order Sales View
-                   </CardTitle>
-                  
-                   <ReactToPrint
-                     trigger={() => (
-                       <Button variant="outline" size="sm" asChild>
-                         <div className="flex items-center gap-2 cursor-pointer">
-                           <Printer className="h-4 w-4" />
-                           Print
-                         </div>
-                       </Button>
-                     )}
-                     content={() => componentRef.current}
-                   />
-                 </div>
-               </CardHeader>
+             <CardHeader className="border-b">
+  <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between w-full  gap-4">
+      <CardTitle className="text-lg font-semibold">
+        Work Order Sales View
+      </CardTitle>
+      <div className="flex gap-4  rounded mr-2  text-lg text-gray-600">
+        <span><strong>Min:</strong> {data?.workOrderDataMin || 'N/A'}</span>
+        <span><strong>Max:</strong> {data?.workOrderDataMax || 'N/A'}</span>
+      </div>
+    </div>
+    
+    <ReactToPrint
+      trigger={() => (
+        <Button variant="outline" size="sm" asChild>
+          <div className="flex items-center gap-2 cursor-pointer">
+            <Printer className="h-4 w-4" />
+            Print
+          </div>
+        </Button>
+      )}
+      content={() => componentRef.current}
+    />
+  </div>
+</CardHeader>
      
                <CardContent className="p-4">
                     <div 
@@ -229,7 +239,7 @@ const ViewSales = () => {
                             <div>
                               <h3 className="font-bold text-lg mb-3 border-b pb-2">Order Summary</h3>
                               <div className="space-y-2">
-                                <p><strong>Total Pieces:</strong> {workOrder.work_order_sa_pcs}</p>
+                                <p><strong>Total Pieces:</strong> {workOrderFooter.total_received}</p>
                                 <p><strong>Remarks:</strong> {workOrder.work_order_sa_remarks || 'No additional remarks'}</p>
                               </div>
                             </div>

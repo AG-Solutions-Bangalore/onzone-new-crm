@@ -12,6 +12,9 @@ import EditOrderForm from "@/app/order-form/EditOrderForm";
 import PublicCreateOrderForm from "@/app/order-form/PublicCreateOrderForm";
 import CreateStock from "@/app/stock/CreateStock";
 import FactoryOrderReceived from "@/app/orderReceived/FactoryOrderReceived";
+
+
+
 // import Home from "@/app/home/Home";
 // import BrandList from "@/app/master/brand/BrandList";
 // import EditBrand from "@/app/master/brand/EditBrand";
@@ -116,12 +119,15 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<AuthRoute />}>
         <Route path="/" element={<Login />} />
+
+
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/create-order" element={<PublicCreateOrderForm />} />
       </Route>
 
       <Route path="/" element={<ProtectedRoute />}>
         {/* Dashboard  */}
+   
         <Route path="/home" element={<Home />} />
         {/* Master  */}
         <Route path="/master/brand" element={<BrandList />} />

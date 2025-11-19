@@ -238,13 +238,13 @@ const DcReceiptReceived = () => {
     }
 
     // Check for duplicates in current box
-    if (isBarcodeDuplicate(barcode)) {
-      setValidationStatus({
-        type: "error",
-        message: "Barcode already exists in this box"
-      });
-      return;
-    }
+    // if (isBarcodeDuplicate(barcode)) {
+    //   setValidationStatus({
+    //     type: "error",
+    //     message: "Barcode already exists in this box"
+    //   });
+    //   return;
+    // }
 
     setLoadingStates((prev) => ({ ...prev, [selectedBox.boxNumber]: true }));
     setValidationStatus({ type: "validating", message: "Validating barcode..." });
@@ -499,7 +499,7 @@ const DcReceiptReceived = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => openBarcodeDialog(boxNumber, boxData)}
+              onClick={() => navigate(`/order-received/edit-order-received/${id}`)}
               className="h-8 w-8 p-0"
             >
               <BarcodeIcon className="h-4 w-4" />
@@ -628,14 +628,14 @@ const DcReceiptReceived = () => {
                   </tr>
                 </tbody>
               </table>
-              {/* Render boxes with barcodes */}
+           
               <div className="mt-4 space-y-4">{renderDynamicBoxContent()}</div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Barcode Scanning Dialog */}
+     
       <Dialog open={barcodeDialogOpen} onOpenChange={setBarcodeDialogOpen}>
         <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
           <DialogHeader>
@@ -645,7 +645,7 @@ const DcReceiptReceived = () => {
           </DialogHeader>
           
           <div className="flex-1 grid grid-cols-2 gap-6 overflow-hidden">
-            {/* Left Side - Original Barcodes */}
+           
             <div className="border rounded-lg p-4 flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Original Barcodes</h3>
@@ -691,11 +691,11 @@ const DcReceiptReceived = () => {
               </div>
             </div>
 
-            {/* Right Side - Barcode Management */}
+  
             <div className="border rounded-lg p-4 flex flex-col">
               <h3 className="text-lg font-semibold mb-4">Scan & Add Barcodes</h3>
               
-              {/* Validation Status */}
+       
               {validationStatus && (
                 <div className={`p-3 rounded mb-4 ${
                   validationStatus.type === 'success' 
@@ -713,7 +713,7 @@ const DcReceiptReceived = () => {
                 </div>
               )}
 
-              {/* Input Section */}
+         
               <div className="flex gap-2 mb-4">
                 <Input
                   value={currentInputValue}
@@ -737,7 +737,7 @@ const DcReceiptReceived = () => {
                 </Button>
               </div>
 
-              {/* Current Barcodes List */}
+           
               <div className="flex-1 overflow-y-auto">
                 {selectedBox?.currentBarcodes.length > 0 ? (
                   <div className="grid grid-cols-1 gap-2">
@@ -794,7 +794,7 @@ const DcReceiptReceived = () => {
                   </p>
                 )}
                 
-                {/* Duplicates Warning */}
+      
                 {selectedBox && (() => {
                   const duplicates = calculateBoxDuplicates(selectedBox.currentBarcodes);
                   const duplicateEntries = Object.entries(duplicates).filter(([_, count]) => count > 1);
@@ -843,7 +843,7 @@ const DcReceiptReceived = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Confirmation Dialog */}
+
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
