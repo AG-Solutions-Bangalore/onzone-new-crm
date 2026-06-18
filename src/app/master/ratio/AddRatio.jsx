@@ -26,7 +26,7 @@ const AddRatio = () => {
 
   const handleFileSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!selectedFile) {
       toast({
         title: "Error",
@@ -46,21 +46,21 @@ const AddRatio = () => {
         `${BASE_URL}/api/create-ratio-files`,
         formData,
         {
-          headers: { 
+          headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
-        }
+        },
       );
 
       if (response?.data.code == 200) {
         toast({
           title: "Success",
-          description:`${response.data.msg}`,
+          description: `${response.data.msg}`,
         });
         await queryClient.invalidateQueries(["ratios"]);
         setOpen(false);
-        navigate('/ratio');
+        navigate("/master/ratio");
       } else {
         toast({
           title: "Error",
@@ -71,7 +71,8 @@ const AddRatio = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to upload ratio file",
+        description:
+          error.response?.data?.message || "Failed to upload ratio file",
         variant: "destructive",
       });
     } finally {
@@ -87,7 +88,7 @@ const AddRatio = () => {
             variant="default"
             className={`ml-2 ${ButtonConfig.backgroundColor} ${ButtonConfig.hoverBackgroundColor} ${ButtonConfig.textColor}`}
           >
-            <SquarePlus className="h-4 w-4 mr-2" />  Ratio
+            <SquarePlus className="h-4 w-4 mr-2" /> Ratio
           </Button>
         )}
       </PopoverTrigger>
@@ -99,12 +100,12 @@ const AddRatio = () => {
               Upload Excel file with ratio data
             </p>
           </div>
-          
+
           <form onSubmit={handleFileSubmit} className="space-y-4">
             <div className="grid gap-2">
               <div className="grid w-full max-w-sm items-center gap-1.5">
                 <Label htmlFor="ratioFile">Ratio File *</Label>
-                <Input 
+                <Input
                   id="ratioFile"
                   type="file"
                   accept=".xlsx,.xls"
@@ -112,16 +113,12 @@ const AddRatio = () => {
                   required
                 />
               </div>
-              
+
               <div className="flex items-center gap-2 mt-2">
                 <span className="text-sm text-muted-foreground">
                   Download sample format:
                 </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  asChild
-                >
+                <Button variant="outline" size="sm" asChild>
                   <a
                     href="https://houseofonzone.com/admin/storage/app/public/File/format.xlsx"
                     download="ratio_format.xlsx"
@@ -133,7 +130,7 @@ const AddRatio = () => {
                 </Button>
               </div>
             </div>
-            
+
             <div className="flex justify-between gap-2">
               <Button
                 type="submit"
@@ -149,10 +146,12 @@ const AddRatio = () => {
                   "Upload File"
                 )}
               </Button>
-              
+
               <Button
                 variant="outline"
-                onClick={(e) => {e.preventDefault(),setOpen(false)}}
+                onClick={(e) => {
+                  (e.preventDefault(), setOpen(false));
+                }}
                 className="flex items-center gap-2"
               >
                 <ArrowLeft className="h-4 w-4" />

@@ -128,87 +128,98 @@ const ViewOrderReceived = () => {
           <CardHeader className="border-b">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold">
-              Packing List
+                Packing List
               </CardTitle>
               <ReactToPrint
-              trigger={() => (
-              <Button variant="outline" size="sm" asChild>
-                <div  className="flex items-center gap-2 cursor-pointer">
-                  <Printer className="h-4 w-4" />
-                  Print
-                </div>
-              </Button>
-               )}
-               content={() => componentRef.current}
-             />
+                trigger={() => (
+                  <Button variant="outline" size="sm" asChild>
+                    <div className="flex items-center gap-2 cursor-pointer">
+                      <Printer className="h-4 w-4" />
+                      Print
+                    </div>
+                  </Button>
+                )}
+                content={() => componentRef.current}
+              />
             </div>
           </CardHeader>
 
           <CardContent className="p-4">
-          <div ref={componentRef} className="bg-white  rounded-lg print:p-4">
-{/* Main Details Table */}
-<table className="w-full mb-1 border-collapse text-sm">
-  <tbody>
-    <tr className="border-b">
-      <td className="font-semibold p-1 w-[8rem]">Factory</td>
-      <td className="p-1 w-[16rem]">
-        : {workOrder.work_order_rc_factory}
-      </td>
-      <td className="font-semibold p-1 w-[6rem] text-right">Date</td>
-      <td className="p-1 w-[8rem]">
-        : {Moment(workOrder.work_order_rc_date).format("DD-MM-YYYY")}
-      </td>
-    </tr>
-    <tr className="border-b">
-      <td className="font-semibold p-1 w-[8rem]">Brand</td>
-      <td className="p-1 w-[16rem]">
-        : {workOrder.work_order_rc_brand}
-      </td>
-      <td className="font-semibold p-1 w-[6rem] text-right">DC No</td>
-      <td className="p-1 w-[8rem]">
-        : {workOrder.work_order_rc_dc_no}
-      </td>
-      <td className="font-semibold p-1 w-[6rem] text-right">
-        DC Date
-      </td>
-      <td className="p-1 w-[8rem]">
-        :{" "}
-        {Moment(workOrder.work_order_rc_dc_date).format("DD-MM-YYYY")}
-      </td>
-    </tr>
-    <tr className="border-b">
-      <td className="font-semibold p-1 w-[8rem]">No of Box</td>
-      <td className="p-1 w-[16rem]">
-        : {workOrder.work_order_rc_box}
-      </td>
-      <td className="font-semibold p-1 w-[6rem] text-right">
-        Total Pcs
-      </td>
-      <td className="p-1 w-[8rem]">
-        : {workOrder.work_order_rc_pcs}
-      </td>
-      <td className="font-semibold p-1 w-[6rem] text-right">
-        Received By
-      </td>
-      <td className="p-1 w-[8rem]">
-        : {workOrder.work_order_rc_received_by}
-      </td>
-    </tr>
-    <tr>
-      <td className="font-semibold p-1 w-[8rem]">Work Order No</td>
-      <td className="p-1 w-[16rem]">
-        : {workOrder.work_order_rc_id}
-      </td>
-      <td className="font-semibold p-1 w-[6rem] text-right">
-        Remarks
-      </td>
-      <td colSpan="3" className="p-1 break-words">
-        : {workOrder.work_order_rc_remarks}
-      </td>
-    </tr>
-  </tbody>
-</table>
-</div>
+            <div ref={componentRef} className="bg-white  rounded-lg print:p-4">
+              {/* Main Details Table */}
+              <table className="w-full mb-1 border-collapse text-sm">
+                <tbody>
+                  <tr className="border-b">
+                    <td className="font-semibold p-1 w-[8rem]">Factory</td>
+                    <td className="p-1 w-[16rem]">
+                      : {workOrder.work_order_rc_factory}
+                    </td>
+                    <td className="font-semibold p-1 w-[6rem] text-right">
+                      Date
+                    </td>
+                    <td className="p-1 w-[8rem]">
+                      :{" "}
+                      {Moment(workOrder.work_order_rc_date).format(
+                        "DD-MM-YYYY",
+                      )}
+                    </td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="font-semibold p-1 w-[8rem]">Brand</td>
+                    <td className="p-1 w-[16rem]">
+                      : {workOrder.work_order_rc_brand}
+                    </td>
+                    <td className="font-semibold p-1 w-[6rem] text-right">
+                      DC No
+                    </td>
+                    <td className="p-1 w-[8rem]">
+                      : {workOrder.work_order_rc_dc_no}
+                    </td>
+                    <td className="font-semibold p-1 w-[6rem] text-right">
+                      DC Date
+                    </td>
+                    <td className="p-1 w-[8rem]">
+                      :{" "}
+                      {Moment(workOrder.work_order_rc_dc_date).format(
+                        "DD-MM-YYYY",
+                      )}
+                    </td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="font-semibold p-1 w-[8rem]">No of Box</td>
+                    <td className="p-1 w-[16rem]">
+                      : {workOrder.work_order_rc_box}
+                    </td>
+                    <td className="font-semibold p-1 w-[6rem] text-right">
+                      Total Pcs
+                    </td>
+                    <td className="p-1 w-[8rem]">
+                      : {workOrder.work_order_rc_pcs}
+                    </td>
+                    <td className="font-semibold p-1 w-[6rem] text-right">
+                      Received By
+                    </td>
+                    <td className="p-1 w-[8rem]">
+                      : {workOrder.work_order_rc_received_by}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="font-semibold p-1 w-[8rem]">
+                      Work Order No
+                    </td>
+                    <td className="p-1 w-[16rem]">
+                      : {workOrder.work_order_rc_id}
+                    </td>
+                    <td className="font-semibold p-1 w-[6rem] text-right">
+                      Remarks
+                    </td>
+                    <td colSpan="3" className="p-1 break-words">
+                      : {workOrder.work_order_rc_remarks}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
       </div>

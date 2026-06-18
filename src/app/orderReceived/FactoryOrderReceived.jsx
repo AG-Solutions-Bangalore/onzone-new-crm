@@ -26,11 +26,9 @@ import { useFetchFactory } from "@/hooks/useApi";
 import { LoaderComponent } from "@/components/LoaderComponent/LoaderComponent";
 import { Textarea } from "@/components/ui/textarea";
 
-
 const orderSchema = z.object({
   work_order_rc_year: z.string(),
   work_order_rc_date: z.string().min(1, "Date is required"),
-  work_order_rc_factory_no: z.string().min(1, "Factory is required"),
   work_order_rc_id: z.number().min(1, "Work Order ID is required"),
   work_order_rc_dc_no: z.string().min(1, "DC No is required"),
   work_order_rc_dc_date: z.string().min(1, "DC Date is required"),
@@ -54,8 +52,7 @@ const FactoryOrderReceived = () => {
   const navigate = useNavigate();
   const inputRefs = useRef([]);
   const { toast } = useToast();
-  
- 
+
   const storedFactoryName = localStorage.getItem("name");
 
   const [selectedFactory, setSelectedFactory] = useState(null);
@@ -64,22 +61,22 @@ const FactoryOrderReceived = () => {
   const [workorder, setWorkorder] = useState({
     work_order_rc_year: dateyear || "",
     work_order_rc_date: getTodayDate() || "",
-    work_order_rc_factory_no: "",
+    work_order_rc_factory_no: localStorage.getItem("factory_id"),
     work_order_rc_id: "",
     work_order_no: "", // for ref
     work_order_rc_dc_no: "",
     work_order_rc_dc_date: getTodayDate() || "",
     work_order_rc_brand: "",
-    work_order_rc_box: "", 
-    work_order_rc_pcs: "", 
+    work_order_rc_box: "",
+    work_order_rc_pcs: "",
     work_order_rc_received_by: "",
-    work_order_rc_fabric_received: "",
+    work_order_rc_fabric_received: "Yes",
     work_order_rc_fabric_count: "",
     work_order_rc_remarks: "",
   });
 
   const [users, setUsers] = useState([
-    { work_order_rc_sub_barcode: "", work_order_rc_sub_box: 1, barcodes: [] }
+    { work_order_rc_sub_barcode: "", work_order_rc_sub_box: 1, barcodes: [] },
   ]);
   const [loadingStates, setLoadingStates] = useState({});
 
@@ -89,36 +86,36 @@ const FactoryOrderReceived = () => {
   const [highlightedItem, setHighlightedItem] = useState(null);
   const { data: factoryData, isFetching } = useFetchFactory();
 
-  
   useEffect(() => {
     if (factoryData?.factory && storedFactoryName) {
       const matchedFactory = factoryData.factory.find(
-        factory => factory.factory_name === storedFactoryName
+        (factory) => factory.factory_name === storedFactoryName,
       );
-      
+
       if (matchedFactory) {
         setSelectedFactory(matchedFactory);
-        setWorkorder(prev => ({
+        setWorkorder((prev) => ({
           ...prev,
-          work_order_rc_factory_no: matchedFactory.factory_no.toString()
+          work_order_rc_factory_no: matchedFactory.factory_no.toString(),
         }));
       }
       setIsFactoryLoading(false);
     } else if (factoryData?.factory) {
-
       setIsFactoryLoading(false);
     }
   }, [factoryData, storedFactoryName]);
 
- 
   useEffect(() => {
     const totalBoxes = users.length;
-    const totalPcs = users.reduce((total, user) => total + user.barcodes.length, 0);
-    
-    setWorkorder(prev => ({
+    const totalPcs = users.reduce(
+      (total, user) => total + user.barcodes.length,
+      0,
+    );
+
+    setWorkorder((prev) => ({
       ...prev,
       work_order_rc_box: totalBoxes.toString(),
-      work_order_rc_pcs: totalPcs.toString()
+      work_order_rc_pcs: totalPcs.toString(),
     }));
   }, [users]);
 
@@ -133,11 +130,13 @@ const FactoryOrderReceived = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       if (!response.ok) throw new Error("Failed to fetch work orders");
       const data = await response.json();
-      return data.workorder || [];
+      return (data.workorder || []).sort(
+        (a, b) => b.work_order_no - a.work_order_no,
+      );
     },
     enabled: !!workorder.work_order_rc_factory_no,
   });
@@ -153,7 +152,7 @@ const FactoryOrderReceived = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       if (!response.ok) throw new Error("Failed to fetch brand");
       const data = await response.json();
@@ -174,16 +173,15 @@ const FactoryOrderReceived = () => {
   const submitMutation = useMutation({
     mutationFn: async (data) => {
       const token = localStorage.getItem("token");
-      
-      
+
       const submissionData = {
         ...data,
-        workorder_sub_rc_data: data.workorder_sub_rc_data.map(user => ({
+        workorder_sub_rc_data: data.workorder_sub_rc_data.map((user) => ({
           ...user,
-          work_order_rc_sub_barcode: user.barcodes.join(",")
-        }))
+          work_order_rc_sub_barcode: user.barcodes.join(","),
+        })),
       };
-      
+
       const response = await fetch(
         `${BASE_URL}/api/create-work-order-received`,
         {
@@ -193,7 +191,7 @@ const FactoryOrderReceived = () => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(submissionData),
-        }
+        },
       );
       if (!response.ok) throw new Error("Failed to create order");
       return response.json();
@@ -225,29 +223,29 @@ const FactoryOrderReceived = () => {
 
   const calculateDuplicates = (users) => {
     const allBarcodes = [];
-    
-    users.forEach(user => {
-      user.barcodes.forEach(barcode => {
+
+    users.forEach((user) => {
+      user.barcodes.forEach((barcode) => {
         if (barcode) {
           allBarcodes.push(barcode);
         }
       });
     });
-    
+
     const duplicates = {};
     const seen = {};
-    
-    allBarcodes.forEach(barcode => {
+
+    allBarcodes.forEach((barcode) => {
       if (seen[barcode]) {
         duplicates[barcode] = (duplicates[barcode] || 1) + 1;
       } else {
         seen[barcode] = true;
       }
     });
-    
+
     return duplicates;
   };
-  
+
   useEffect(() => {
     setDuplicateBarcodes(calculateDuplicates(users));
   }, [users]);
@@ -259,9 +257,8 @@ const FactoryOrderReceived = () => {
   const addBarcodeToBox = async (index) => {
     if (!currentInputValue.trim()) return;
     setLoadingStates((prev) => ({ ...prev, [index]: true }));
-  
+
     try {
-     
       const barcode = currentInputValue.trim();
       if (barcode.length !== 6) {
         toast({
@@ -271,30 +268,28 @@ const FactoryOrderReceived = () => {
         });
         return;
       }
-      
-     
+
       const workId = workorder.work_order_no;
       const token = localStorage.getItem("token");
-     
+
       const response = await fetch(
         `${BASE_URL}/api/fetch-work-order-finish-check/${workId}/${barcode}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (!response.ok) throw new Error("Barcode validation failed");
       const data = await response.json();
 
       if (data?.code === 200) {
-     
         const newUsers = [...users];
         newUsers[index].barcodes.push(barcode);
         setUsers(newUsers);
         setCurrentInputValue("");
-        
+
         toast({
           title: "Success",
           description: "Barcode added successfully",
@@ -303,7 +298,7 @@ const FactoryOrderReceived = () => {
       } else {
         toast({
           title: "Error",
-          description: data?.msg || 'Barcode not found in work order',
+          description: data?.msg || "Barcode not found in work order",
           variant: "destructive",
         });
       }
@@ -319,27 +314,34 @@ const FactoryOrderReceived = () => {
   };
 
   const handleKeyPress = (e, index) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       addBarcodeToBox(index);
     }
   };
 
-  const removeBarcode = useCallback((boxIndex, barcodeIndex) => {
-    const newUsers = [...users];
-    newUsers[boxIndex].barcodes.splice(barcodeIndex, 1);
-    setUsers(newUsers);
-  }, [users]);
+  const removeBarcode = useCallback(
+    (boxIndex, barcodeIndex) => {
+      const newUsers = [...users];
+      newUsers[boxIndex].barcodes.splice(barcodeIndex, 1);
+      setUsers(newUsers);
+    },
+    [users],
+  );
 
   const addItem = (e) => {
     e.preventDefault();
     const newUsers = [
       ...users,
-      { work_order_rc_sub_barcode: "", work_order_rc_sub_box: users.length + 1, barcodes: [] },
+      {
+        work_order_rc_sub_barcode: "",
+        work_order_rc_sub_box: users.length + 1,
+        barcodes: [],
+      },
     ];
     setUsers(newUsers);
   };
-  
+
   const removeUser = (index) => {
     const newUsers = users.filter((_, i) => i !== index);
     const updatedUsers = newUsers.map((u, i) => ({
@@ -348,19 +350,19 @@ const FactoryOrderReceived = () => {
     }));
     setUsers(updatedUsers);
   };
-  
+
   const onSubmit = async (e) => {
     e.preventDefault();
-  
+
     const data = {
       ...workorder,
       work_order_rc_year: dateyear,
       work_order_rc_count: users.length,
       workorder_sub_rc_data: users,
-      work_order_rc_id: workorder.work_order_no, 
+      work_order_rc_id: workorder.work_order_no,
       work_order_rc_brand: brandData?.work_order_brand || "",
     };
-  
+
     try {
       const validation = orderSchema.safeParse(data);
       if (!validation.success) {
@@ -370,7 +372,7 @@ const FactoryOrderReceived = () => {
           description: (
             <div className="grid gap-1">
               {validation.error.errors.map((error, i) => {
-                const field = error.path[0].replace(/_/g, ' ');
+                const field = error.path[0].replace(/_/g, " ");
                 const label = field.charAt(0).toUpperCase() + field.slice(1);
                 return (
                   <div key={i} className="flex items-start gap-2">
@@ -378,7 +380,8 @@ const FactoryOrderReceived = () => {
                       {i + 1}
                     </div>
                     <p className="text-xs">
-                      <span className="font-medium">{label}:</span> {error.message}
+                      <span className="font-medium">{label}:</span>{" "}
+                      {error.message}
                     </p>
                   </div>
                 );
@@ -389,8 +392,10 @@ const FactoryOrderReceived = () => {
         return;
       }
 
-    
-      const totalBarcodes = users.reduce((total, user) => total + user.barcodes.length, 0);
+      const totalBarcodes = users.reduce(
+        (total, user) => total + user.barcodes.length,
+        0,
+      );
       if (totalBarcodes === 0) {
         toast({
           variant: "destructive",
@@ -410,7 +415,10 @@ const FactoryOrderReceived = () => {
     }
   };
 
-  const totalTCodes = users.reduce((total, user) => total + user.barcodes.length, 0);
+  const totalTCodes = users.reduce(
+    (total, user) => total + user.barcodes.length,
+    0,
+  );
 
   if (isFetching || isFactoryLoading) {
     return <LoaderComponent name="Data" />;
@@ -423,7 +431,7 @@ const FactoryOrderReceived = () => {
           <CardHeader className="border-b">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold">
-                Add Order Received
+                Add Material Received
               </CardTitle>
               <Button variant="outline" size="sm" asChild>
                 <Link to="/work-order" className="flex items-center gap-2">
@@ -437,7 +445,6 @@ const FactoryOrderReceived = () => {
           <CardContent className="p-4">
             <form className="space-y-2">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            
                 {/* <div className="space-y-1">
                   <Label htmlFor="factory">
                     Factory <span className="text-red-500">*</span>
@@ -496,13 +503,15 @@ const FactoryOrderReceived = () => {
                     name="work_order_rc_id"
                     value={workorder.work_order_rc_id}
                     onValueChange={(value) => {
-                        const selectedWorkOrder = workOrders.find((item) => item.id === value);
-                        setWorkorder({
-                          ...workorder,
-                          work_order_rc_id: selectedWorkOrder?.id, 
-                          work_order_no: selectedWorkOrder.work_order_no, 
-                        });
-                      }}
+                      const selectedWorkOrder = workOrders.find(
+                        (item) => item.id === value,
+                      );
+                      setWorkorder({
+                        ...workorder,
+                        work_order_rc_id: selectedWorkOrder?.id,
+                        work_order_no: selectedWorkOrder.work_order_no,
+                      });
+                    }}
                     disabled={!workorder.work_order_rc_factory_no}
                   >
                     <SelectTrigger>
@@ -512,10 +521,7 @@ const FactoryOrderReceived = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {workOrders.map((workOrder) => (
-                        <SelectItem
-                          key={workOrder.id}
-                          value={workOrder.id}
-                        >
+                        <SelectItem key={workOrder.id} value={workOrder.id}>
                           {workOrder.work_order_no}
                         </SelectItem>
                       ))}
@@ -537,7 +543,7 @@ const FactoryOrderReceived = () => {
                 {/* Receive Date */}
                 <div className="space-y-1">
                   <Label htmlFor="receiveDate">
-                     Date <span className="text-red-500">*</span>
+                    Date <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     type="date"
@@ -576,13 +582,15 @@ const FactoryOrderReceived = () => {
                 </div>
 
                 {/* Fabric Received */}
-             
 
                 {/* Remarks */}
-                <div className={`space-y-1 ${
+                <div
+                  className={`space-y-1 ${
                     workorder.work_order_rc_fabric_received === "Yes"
                       ? "col-span-full"
-                      : "col-span-3"}`}>
+                      : "col-span-3"
+                  }`}
+                >
                   <Label htmlFor="remarks">Remarks</Label>
                   <Input
                     id="remarks"
@@ -593,18 +601,17 @@ const FactoryOrderReceived = () => {
                 </div>
               </div>
 
-            
               <hr className="my-2" />
 
-             
               <div className="space-y-1">
                 <Label className="text-sm font-medium">
-                  Barcode Entries (Total Box: {users.length}, Total Barcode: {totalTCodes})
+                  Barcode Entries (Total Box: {users.length}, Total Barcode:{" "}
+                  {totalTCodes})
                 </Label>
                 <div className="space-y-2">
                   {users.map((user, index) => {
                     const boxDuplicates = {};
-                    user.barcodes.forEach(barcode => {
+                    user.barcodes.forEach((barcode) => {
                       if (boxDuplicates[barcode]) {
                         boxDuplicates[barcode] += 1;
                       } else {
@@ -616,20 +623,34 @@ const FactoryOrderReceived = () => {
                       return Object.entries(boxDuplicates)
                         .filter(([_, count]) => count > 1)
                         .map(([barcode, count]) => `${barcode} × ${count}`)
-                        .join(', ');
+                        .join(", ");
                     };
 
                     return (
-                      <div key={index} className="border rounded p-2 bg-gray-50">
+                      <div
+                        key={index}
+                        className="border rounded p-2 bg-gray-50"
+                      >
                         <div className="flex items-center justify-between gap-2 mb-1">
-                          <Label className="text-xs font-medium">Box {index + 1} - {user.barcodes.length} pieces</Label>
+                          <Label className="text-xs font-medium">
+                            Box {index + 1} - {user.barcodes.length} pieces
+                          </Label>
                           <div className="flex items-center gap-1">
                             <Input
                               ref={(el) => (inputRefs.current[index] = el)}
-                              value={activeInputIndex === index ? currentInputValue : ""}
+                              value={
+                                activeInputIndex === index
+                                  ? currentInputValue
+                                  : ""
+                              }
                               onChange={(e) => {
-                                const value = e.target.value.toUpperCase().replace(/\s/g, '');
-                                handleBarcodeInputChange({ target: { value } }, index);
+                                const value = e.target.value
+                                  .toUpperCase()
+                                  .replace(/\s/g, "");
+                                handleBarcodeInputChange(
+                                  { target: { value } },
+                                  index,
+                                );
                               }}
                               onKeyPress={(e) => handleKeyPress(e, index)}
                               onFocus={() => {
@@ -637,10 +658,20 @@ const FactoryOrderReceived = () => {
                                 setCurrentInputValue("");
                               }}
                               onPaste={(e) => {
-                                const pastedText = e.clipboardData.getData('text').toUpperCase().replace(/\s/g, '');
+                                const pastedText = e.clipboardData
+                                  .getData("text")
+                                  .toUpperCase()
+                                  .replace(/\s/g, "");
                                 e.preventDefault();
-                                document.execCommand('insertText', false, pastedText);
-                                handleBarcodeInputChange({ target: { value: pastedText } }, index);
+                                document.execCommand(
+                                  "insertText",
+                                  false,
+                                  pastedText,
+                                );
+                                handleBarcodeInputChange(
+                                  { target: { value: pastedText } },
+                                  index,
+                                );
                               }}
                               placeholder="6-digit barcode"
                               className="h-8 text-xs p-1 uppercase bg-blue-200 text-black"
@@ -684,14 +715,19 @@ const FactoryOrderReceived = () => {
                                 <div
                                   key={`${index}-${barcode}-${barcodeIndex}`}
                                   className={`bg-white p-1 rounded border border-gray-200 text-xs flex items-center justify-between ${
-                                    highlightedItem === barcode ? 'bg-blue-100 border-2 border-blue-600' : ''
+                                    highlightedItem === barcode
+                                      ? "bg-blue-100 border-2 border-blue-600"
+                                      : ""
                                   }`}
                                 >
                                   <div className="flex items-center min-w-0 flex-1">
                                     <span className="text-gray-500 mr-1 w-4 text-right shrink-0">
                                       {barcodeIndex + 1}.
                                     </span>
-                                    <span className="font-mono truncate" title={barcode}>
+                                    <span
+                                      className="font-mono truncate"
+                                      title={barcode}
+                                    >
                                       {barcode}
                                     </span>
                                   </div>
@@ -701,7 +737,9 @@ const FactoryOrderReceived = () => {
                                       variant="ghost"
                                       size="icon"
                                       type="button"
-                                      onClick={() => removeBarcode(index, barcodeIndex)}
+                                      onClick={() =>
+                                        removeBarcode(index, barcodeIndex)
+                                      }
                                       className="h-5 w-5 hover:bg-red-100 text-red-500 shrink-0 p-0.5"
                                     >
                                       <Minus className="h-2.5 w-2.5" />
@@ -711,9 +749,13 @@ const FactoryOrderReceived = () => {
                               ))}
                             </div>
                           ) : (
-                            <p className="text-xs text-gray-500 italic">No barcodes added yet</p>
+                            <p className="text-xs text-gray-500 italic">
+                              No barcodes added yet
+                            </p>
                           )}
-                          {Object.keys(boxDuplicates).filter(barcode => boxDuplicates[barcode] > 1).length > 0 && (
+                          {Object.keys(boxDuplicates).filter(
+                            (barcode) => boxDuplicates[barcode] > 1,
+                          ).length > 0 && (
                             <div className="mt-1 text-amber-600 text-xs">
                               Duplicates: {formatBoxDuplicates()}
                             </div>
@@ -738,8 +780,11 @@ const FactoryOrderReceived = () => {
                 <Button variant="outline" asChild>
                   <Link to="/work-order">Cancel</Link>
                 </Button>
-                <Button type="button"
-                onClick={onSubmit} disabled={submitMutation.isPending}>
+                <Button
+                  type="button"
+                  onClick={onSubmit}
+                  disabled={submitMutation.isPending}
+                >
                   {submitMutation.isPending ? "Submitting..." : "Submit"}
                 </Button>
               </div>

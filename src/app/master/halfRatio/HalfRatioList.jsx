@@ -70,380 +70,379 @@ import { useToast } from "@/hooks/use-toast";
 import Page from "@/app/dashboard/page";
 
 const HalfRatioList = () => {
-   const { toast } = useToast();
-      const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-      const [deleteWorkOrderId, setDeleteWorkOrderId] = useState(null);
-    
-      const {
-        data: ratioHalf,
-        isLoading,
-        isError,
-        refetch,
-      } = useQuery({
-        queryKey: ["ratioHalf"],
-        queryFn: async () => {
-          const token = localStorage.getItem("token");
-          const response = await axios.get(
-            `${BASE_URL}/api/fetch-half-ratio-list`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
-          return response.data.ratioHalf;
-        },
-      });
-    
-      const deleteMutation = useMutation({
-        mutationFn: async (id) => {
-          const token = localStorage.getItem("token");
-          return await axios.delete(`${BASE_URL}/api/delete-half-ratio/${id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-        },
-        onSuccess: (response) => {
-          refetch();
-          setDeleteConfirmOpen(false);
-          toast({
-            title: "Success",
-            description: `${response.data.msg}`,
-          });
-        },
-        onError: (error) => {
-          toast({
-            title: "Error",
-            description: `${error.response?.data?.message}`,
-            variant: "destructive",
-          });
-        }
-      });
-      const confirmDelete = (e) => {
-        e.preventDefault();
-      e.stopPropagation();
-        if (deleteWorkOrderId && !deleteMutation.isPending) {
-          deleteMutation.mutate(deleteWorkOrderId);
-         
-        }
-      };
-    
-      // State for table management
-      const [sorting, setSorting] = useState([]);
-      const [columnFilters, setColumnFilters] = useState([]);
-      const [columnVisibility, setColumnVisibility] = useState({});
-      const [rowSelection, setRowSelection] = useState({});
-      const navigate = useNavigate();
-    
-      // Define columns for the table
-      const columns = [
-  
-        {
-          accessorKey: "ratio_range",
-          id: "Ratio Half",
-          header: "Ratio Half",
-          cell: ({ row }) => <div>{row.getValue("Ratio Half")}</div>,
-        },
-  
-        {
-          accessorKey: "ratio_group",
-          id: "Ratio Group",
-          header: "Ratio Group",
-          cell: ({ row }) => <div>{row.getValue("Ratio Group")}</div>,
-        },
-    
-        {
-          accessorKey: "ratio_type",
-          id: "Ratio Type",
-          header: "Ratio Type",
-          cell: ({ row }) => <div>{row.getValue("Ratio Type")}</div>,
-        },
-    
-    
-        {
-          accessorKey: "ratio_status",
-          id: "Status",
-          header: "Status",
-          cell: ({ row }) => {
-            const status = row.getValue("Status");
-    
-            const statusColors = {
-              Active: "bg-green-100 text-green-800",
-              Inactive: "bg-red-100 text-red-800",
-            };
-    
-            return (
-              <span
-                className={`px-2 py-1 rounded text-xs ${
-                  statusColors[status] || "bg-gray-100 text-gray-800"
-                }`}
-              >
-                {status}
-              </span>
-            );
-          },
-        },
-    
-        {
-          id: "actions",
-    
-          header: "Action",
-          cell: ({ row }) => {
-            const halfRatioId = row.original.id;
-    
-            return (
-              <div className="flex flex-row">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() =>
-                          navigate(`/master/half-ratio/edit-half-ratio/${halfRatioId}`)
-                        }
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Edit Half-Ratio</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-    
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setDeleteWorkOrderId(halfRatioId);
-                          setDeleteConfirmOpen(true);
-                        }}
-                      >
-                        <Trash className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Delete Half-Ratio</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            );
-          },
-        },
-      ];
-    
-      // Create the table instance
-      const table = useReactTable({
-        data: ratioHalf || [],
-        columns,
-        onSortingChange: setSorting,
-        onColumnFiltersChange: setColumnFilters,
-        getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        onColumnVisibilityChange: setColumnVisibility,
-        onRowSelectionChange: setRowSelection,
-        state: {
-          sorting,
-          columnFilters,
-          columnVisibility,
-          rowSelection,
-        },
-        initialState: {
-          pagination: {
-            pageSize: 7,
-          },
-        },
-      });
-    
-      // Render loading state
-      if (isLoading) {
-        return <LoaderComponent name="Style Da Half-Ratiota" />;
-      }
-    
-      // Render error state
-      if (isError) {
-        return (
-          <ErrorComponent
-            message="Error Fetching Half-Ratio  Data"
-            refetch={refetch}
-          />
-        );
-      }
-  return (
-   <Page>
-      <div className="w-full p-4">
-            <div className="flex text-left text-2xl text-gray-800 font-[400]">
-              Half-Ratio List
-            </div>
-            {/* searching and column filter  */}
-            <div className="flex items-center py-4">
-              <div className="relative w-72">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
-                <Input
-                  placeholder="Search half-ratio..."
-                  value={table.getState().globalFilter || ""}
-                  onChange={(event) => table.setGlobalFilter(event.target.value)}
-                  className="pl-8 bg-gray-50 border-gray-200 focus:border-gray-300 focus:ring-gray-200"
-                />
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="ml-auto">
-                    Columns <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {table
-                    .getAllColumns()
-                    .filter((column) => column.getCanHide())
-                    .map((column) => {
-                      return (
-                        <DropdownMenuCheckboxItem
-                          key={column.id}
-                          className="capitalize"
-                          checked={column.getIsVisible()}
-                          onCheckedChange={(value) =>
-                            column.toggleVisibility(!!value)
-                          }
-                        >
-                          {column.id}
-                        </DropdownMenuCheckboxItem>
-                      );
-                    })}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Button
-                variant="default"
-                className={`ml-2 ${ButtonConfig.backgroundColor} ${ButtonConfig.hoverBackgroundColor} ${ButtonConfig.textColor}`}
-                onClick={() => navigate("/master/half-ratio/add-half-ratio")}
-              >
-                <SquarePlus className="h-4 w-4" /> Half-Ratio
-              </Button>
-            </div>
-            {/* table  */}
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => {
-                        return (
-                          <TableHead
-                            key={header.id}
-                            className={` ${ButtonConfig.tableHeader} ${ButtonConfig.tableLabel}`}
-                          >
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext()
-                                )}
-                          </TableHead>
-                        );
-                      })}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-                <TableBody>
-                  {table.getRowModel().rows?.length ? (
-                    table.getRowModel().rows.map((row) => (
-                      <TableRow
-                        key={row.id}
-                        data-state={row.getIsSelected() && "selected"}
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id}>
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell
-                        colSpan={columns.length}
-                        className="h-24 text-center"
-                      >
-                        No results.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-            {/* row slection and pagintaion button  */}
-            <div className="flex items-center justify-end space-x-2 py-4">
-              <div className="flex-1 text-sm text-muted-foreground">
-                Total Half-Ratio : &nbsp;
-                {table.getFilteredRowModel().rows.length}
-              </div>
-              <div className="space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          </div>
-          <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete the
-                  half-ratio.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={confirmDelete}
-                  className={`${ButtonConfig.backgroundColor}  ${ButtonConfig.textColor} text-black hover:bg-red-600`}
-                  disabled={deleteMutation.isPending}
-                >
-                 {deleteMutation.isPending ? (
-          <div className="flex items-center gap-2">
-            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-            Processing...
-          </div>
-        ) : (
-          "Delete"
-        )}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-   </Page>
-  )
-}
+  const { toast } = useToast();
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteWorkOrderId, setDeleteWorkOrderId] = useState(null);
 
-export default HalfRatioList
+  const {
+    data: ratioHalf,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ["ratioHalf"],
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `${BASE_URL}/api/fetch-half-ratio-list`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      return response.data.ratioHalf;
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id) => {
+      const token = localStorage.getItem("token");
+      return await axios.delete(`${BASE_URL}/api/delete-half-ratio/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    },
+    onSuccess: (response) => {
+      refetch();
+      setDeleteConfirmOpen(false);
+      toast({
+        title: "Success",
+        description: `${response.data.msg}`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `${error.response?.data?.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+  const confirmDelete = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (deleteWorkOrderId && !deleteMutation.isPending) {
+      deleteMutation.mutate(deleteWorkOrderId);
+    }
+  };
+
+  // State for table management
+  const [sorting, setSorting] = useState([]);
+  const [columnFilters, setColumnFilters] = useState([]);
+  const [columnVisibility, setColumnVisibility] = useState({});
+  const [rowSelection, setRowSelection] = useState({});
+  const navigate = useNavigate();
+
+  // Define columns for the table
+  const columns = [
+    {
+      accessorKey: "ratio_range",
+      id: "Ratio Half",
+      header: "Ratio Half",
+      cell: ({ row }) => <div>{row.getValue("Ratio Half")}</div>,
+    },
+
+    {
+      accessorKey: "ratio_group",
+      id: "Ratio Group",
+      header: "Ratio Group",
+      cell: ({ row }) => <div>{row.getValue("Ratio Group")}</div>,
+    },
+
+    {
+      accessorKey: "ratio_type",
+      id: "Ratio Type",
+      header: "Ratio Type",
+      cell: ({ row }) => <div>{row.getValue("Ratio Type")}</div>,
+    },
+
+    {
+      accessorKey: "ratio_status",
+      id: "Status",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = row.getValue("Status");
+
+        const statusColors = {
+          Active: "bg-green-100 text-green-800",
+          Inactive: "bg-red-100 text-red-800",
+        };
+
+        return (
+          <span
+            className={`px-2 py-1 rounded text-xs ${
+              statusColors[status] || "bg-gray-100 text-gray-800"
+            }`}
+          >
+            {status}
+          </span>
+        );
+      },
+    },
+
+    {
+      id: "actions",
+
+      header: "Action",
+      cell: ({ row }) => {
+        const halfRatioId = row.original.id;
+
+        return (
+          <div className="flex flex-row">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() =>
+                      navigate(
+                        `/master/half-ratio/edit-half-ratio/${halfRatioId}`,
+                      )
+                    }
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Edit Half-Ratio</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setDeleteWorkOrderId(halfRatioId);
+                      setDeleteConfirmOpen(true);
+                    }}
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Delete Half-Ratio</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        );
+      },
+    },
+  ];
+
+  // Create the table instance
+  const table = useReactTable({
+    data: ratioHalf || [],
+    columns,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      rowSelection,
+    },
+    initialState: {
+      pagination: {
+        pageSize: 7,
+      },
+    },
+  });
+
+  // Render loading state
+  if (isLoading) {
+    return <LoaderComponent name="Style Da Half-Ratiota" />;
+  }
+
+  // Render error state
+  if (isError) {
+    return (
+      <ErrorComponent
+        message="Error Fetching Half-Ratio  Data"
+        refetch={refetch}
+      />
+    );
+  }
+  return (
+    <Page>
+      <div className="w-full p-4">
+        <div className="flex text-left text-2xl text-gray-800 font-[400]">
+          Half-Ratio List
+        </div>
+        {/* searching and column filter  */}
+        <div className="flex items-center py-4">
+          <div className="relative w-72">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
+            <Input
+              placeholder="Search half-ratio..."
+              value={table.getState().globalFilter || ""}
+              onChange={(event) => table.setGlobalFilter(event.target.value)}
+              className="pl-8 bg-gray-50 border-gray-200 focus:border-gray-300 focus:ring-gray-200"
+            />
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="ml-auto">
+                Columns <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => {
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  );
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            variant="default"
+            className={`ml-2 ${ButtonConfig.backgroundColor} ${ButtonConfig.hoverBackgroundColor} ${ButtonConfig.textColor}`}
+            onClick={() => navigate("/master/half-ratio/add-half-ratio")}
+          >
+            <SquarePlus className="h-4 w-4" /> Half-Ratio
+          </Button>
+        </div>
+        {/* table  */}
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead
+                        key={header.id}
+                        className={` ${ButtonConfig.tableHeader} ${ButtonConfig.tableLabel}`}
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        {/* row slection and pagintaion button  */}
+        <div className="flex items-center justify-end space-x-2 py-4">
+          <div className="flex-1 text-sm text-muted-foreground">
+            Total Half-Ratio : &nbsp;
+            {table.getFilteredRowModel().rows.length}
+          </div>
+          <div className="space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      </div>
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              half-ratio.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className={`${ButtonConfig.backgroundColor}  ${ButtonConfig.textColor} text-black hover:bg-red-600`}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? (
+                <div className="flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Processing...
+                </div>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Page>
+  );
+};
+
+export default HalfRatioList;
