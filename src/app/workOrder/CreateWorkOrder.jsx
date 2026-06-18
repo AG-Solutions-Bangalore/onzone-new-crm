@@ -6,13 +6,14 @@ import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import Select from "react-select";
+// import {
+//   Select,
+//   SelectContent,
+//   SelectItem,
+//   SelectTrigger,
+//   SelectValue,
+// } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 import axios from "axios";
@@ -52,15 +53,15 @@ const formSchema = z.object({
       work_order_sub_46_h: z.string(),
       work_order_sub_48_h: z.string(),
       work_order_sub_50_h: z.string(),
-         work_order_sub_a: z.string().min(1, "A is required"),
+      work_order_sub_a: z.string().min(1, "A is required"),
       work_order_sub_b: z.string(),
       work_order_sub_c: z.string(),
-    work_order_sub_length: z.string().min(1, "Length  is required"),
-         work_order_sub_new_length: z.string(),
-         work_order_sub_half_shirt: z.string().min(1, "Half Shirt is required"),
-         work_order_sub_full_shirt: z.string().min(1, "Full Shirt is required"),
+      work_order_sub_length: z.string().min(1, "Length  is required"),
+      work_order_sub_new_length: z.string(),
+      work_order_sub_half_shirt: z.string().min(1, "Half Shirt is required"),
+      work_order_sub_full_shirt: z.string().min(1, "Full Shirt is required"),
       work_order_sub_amount: z.string().min(1, "Mrp is required"),
-    })
+    }),
   ),
   work_order_ratio: z.string().min(1, "Full ratio is required"),
   work_order_ratio_consumption: z
@@ -77,7 +78,6 @@ const CreateWorkOrder = () => {
   const { toast } = useToast();
   const [ratioValue, setRatioValue] = useState("");
 
- 
   // const { data: brandData ,isLoading} = useFetchBrand();
   // const { data: widthData } = useFetchWidth();
   // const { data: styleData } = useFetchStyle();
@@ -85,14 +85,42 @@ const CreateWorkOrder = () => {
   // const { data: halfRatioData } = useFetchHalfRatio();
   // const { data: factoryData } = useFetchFactory();
   // const { data: yearData } = useFetchCurrentYear();
-  const { data: brandData, isFetching: isBrandLoading, refetch: refetchBrands } = useFetchBrand();
-  const { data: widthData, isFetching: isWidthLoading, refetch: refetchWidths } = useFetchWidth();
-  const { data: styleData, isFetching: isStyleLoading, refetch: refetchStyles } = useFetchStyle();
-  const { data: ratioData, isFetching: isRatioLoading, refetch: refetchRatios } = useFetchRatio();
-  const { data: halfRatioData, isFetching: isHalfRatioLoading, refetch: refetchHalfRatios } = useFetchHalfRatio();
-  const { data: factoryData, isFetching: isFactoryLoading, refetch: refetchFactories } = useFetchFactory();
-  const { data: yearData, isFetching: isYearLoading, refetch: refetchYears } = useFetchCurrentYear();
-  
+  const {
+    data: brandData,
+    isFetching: isBrandLoading,
+    refetch: refetchBrands,
+  } = useFetchBrand();
+  const {
+    data: widthData,
+    isFetching: isWidthLoading,
+    refetch: refetchWidths,
+  } = useFetchWidth();
+  const {
+    data: styleData,
+    isFetching: isStyleLoading,
+    refetch: refetchStyles,
+  } = useFetchStyle();
+  const {
+    data: ratioData,
+    isFetching: isRatioLoading,
+    refetch: refetchRatios,
+  } = useFetchRatio();
+  const {
+    data: halfRatioData,
+    isFetching: isHalfRatioLoading,
+    refetch: refetchHalfRatios,
+  } = useFetchHalfRatio();
+  const {
+    data: factoryData,
+    isFetching: isFactoryLoading,
+    refetch: refetchFactories,
+  } = useFetchFactory();
+  const {
+    data: yearData,
+    isFetching: isYearLoading,
+    refetch: refetchYears,
+  } = useFetchCurrentYear();
+
   const [workorder, setWorkOrder] = useState({
     work_order_year: yearData?.year?.current_year || "",
     work_order_factory_no: "",
@@ -137,22 +165,20 @@ const CreateWorkOrder = () => {
   const generateNextTCode = (lastTCode) => {
     if (!lastTCode || lastTCode === "") return "1";
 
-    
     const match = lastTCode.match(/^([A-Za-z]*)(\d+)$/);
     if (match) {
       const prefix = match[1];
       const number = parseInt(match[2]) + 1;
       return prefix + number;
     } else {
-    
       if (/^[A-Za-z]+$/.test(lastTCode)) {
         return lastTCode + "1";
       }
-      
+
       if (/^\d+$/.test(lastTCode)) {
         return (parseInt(lastTCode) + 1).toString();
       }
-    
+
       return lastTCode + "1";
     }
   };
@@ -179,7 +205,7 @@ const CreateWorkOrder = () => {
 
   const onChange = (e, index) => {
     const updatedUsers = users.map((user, i) =>
-      index === i ? { ...user, [e.target.name]: e.target.value } : user
+      index === i ? { ...user, [e.target.name]: e.target.value } : user,
     );
     setUsers(updatedUsers);
   };
@@ -193,13 +219,12 @@ const CreateWorkOrder = () => {
 
   const calculateHalfValues = (index, field, value) => {
     const newValue = halfRatioData?.half_ratio?.find(
-      (item) => item.ratio_range === ratioValue
+      (item) => item.ratio_range === ratioValue,
     );
     if (!newValue) return;
 
     const tempUsers = [...users];
 
-    
     tempUsers[index][`work_order_sub_${field}`] = value;
 
     const parts = newValue.ratio_type.split(",");
@@ -215,7 +240,7 @@ const CreateWorkOrder = () => {
     const halfShirtTotal = ["38", "40", "42", "44", "46", "48", "50"].reduce(
       (sum, size) =>
         sum + parseFloat(tempUsers[index][`work_order_sub_${size}_h`] || 0),
-      0
+      0,
     );
 
     tempUsers[index].work_order_sub_half_shirt = halfShirtTotal.toFixed(2);
@@ -233,7 +258,7 @@ const CreateWorkOrder = () => {
     setUsers(tempUsers);
 
     const hasNegative = tempUsers.some(
-      (user) => Math.sign(parseFloat(user.work_order_sub_full_shirt)) === -1
+      (user) => Math.sign(parseFloat(user.work_order_sub_full_shirt)) === -1,
     );
 
     if (hasNegative) {
@@ -279,7 +304,7 @@ const CreateWorkOrder = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
       return response.data;
     },
@@ -303,7 +328,7 @@ const CreateWorkOrder = () => {
         variant: "destructive",
         title: "Error",
         description:
-        error.response?.data?.message ||
+          error.response?.data?.message ||
           "Submission failed. Please try again.",
       });
     },
@@ -325,7 +350,7 @@ const CreateWorkOrder = () => {
 
     // Check for negative values - for cloth shortage
     const hasNegative = users.some(
-      (user) => Math.sign(parseFloat(user.work_order_sub_full_shirt)) === -1
+      (user) => Math.sign(parseFloat(user.work_order_sub_full_shirt)) === -1,
     );
 
     if (hasNegative) {
@@ -361,7 +386,7 @@ const CreateWorkOrder = () => {
         description: (
           <div className="grid gap-1">
             {validation.error.errors.map((error, i) => {
-              const field = error.path[0].replace(/_/g, ' ');
+              const field = error.path[0].replace(/_/g, " ");
               const label = field.charAt(0).toUpperCase() + field.slice(1);
               return (
                 <div key={i} className="flex items-start gap-2">
@@ -369,7 +394,8 @@ const CreateWorkOrder = () => {
                     {i + 1}
                   </div>
                   <p className="text-xs">
-                    <span className="font-medium">{label}:</span> {error.message}
+                    <span className="font-medium">{label}:</span>{" "}
+                    {error.message}
                   </p>
                 </div>
               );
@@ -382,7 +408,14 @@ const CreateWorkOrder = () => {
 
     createWorkOrderMutation.mutate(data);
   };
-if (isBrandLoading && isWidthLoading  && isRatioLoading && isHalfRatioLoading && isFactoryLoading && isYearLoading) {
+  if (
+    isBrandLoading &&
+    isWidthLoading &&
+    isRatioLoading &&
+    isHalfRatioLoading &&
+    isFactoryLoading &&
+    isYearLoading
+  ) {
     return <LoaderComponent name=" Data" />;
   }
   return (
@@ -393,36 +426,41 @@ if (isBrandLoading && isWidthLoading  && isRatioLoading && isHalfRatioLoading &&
         </h3>
 
         <div className="p-4 bg-white rounded-lg shadow">
-          <form id="addIndiv" autoComplete="off" >
+          <form id="addIndiv" autoComplete="off">
             <div className="grid grid-cols-1 gap-4  md:grid-cols-2 lg:grid-cols-4">
               {/* Factory */}
               <div className="space-y-1">
-                
                 <Label htmlFor="work_order_factory_no">
                   Factory <span className="text-red-500">*</span>
                 </Label>
                 <Select
-                  name="work_order_factory_no"
-                  value={workorder.work_order_factory_no}
-                  onValueChange={(value) =>
-                    setWorkOrder({ ...workorder, work_order_factory_no: value })
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  placeholder="Search factory..."
+                  options={
+                    factoryData?.factory?.map((factory) => ({
+                      value: factory.factory_no.toString(),
+                      label: factory.factory_name,
+                    })) || []
                   }
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select factory" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {factoryData?.factory?.map((factory) => (
-                      <SelectItem
-                        key={factory.factory_no}
-                        value={String(factory.factory_no)}
-                      >
-                        {factory.factory_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  value={
+                    factoryData?.factory
+                      ?.map((factory) => ({
+                        value: factory.factory_no.toString(),
+                        label: factory.factory_name,
+                      }))
+                      .find(
+                        (opt) =>
+                          opt.value === String(workorder.work_order_factory_no),
+                      ) || null
+                  }
+                  onChange={(selected) => {
+                    setWorkOrder((prev) => ({
+                      ...prev,
+                      work_order_factory_no: selected?.value || "",
+                    }));
+                  }}
+                />
               </div>
 
               {/* Brand */}
@@ -431,27 +469,33 @@ if (isBrandLoading && isWidthLoading  && isRatioLoading && isHalfRatioLoading &&
                   Brand <span className="text-red-500">*</span>
                 </Label>
                 <Select
-                  name="work_order_brand"
-                  value={workorder.work_order_brand}
-                  onValueChange={(value) =>
-                    setWorkOrder({ ...workorder, work_order_brand: value })
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  placeholder="Search brand..."
+                  options={
+                    brandData?.brand?.map((brand) => ({
+                      value: brand.fabric_brand_brands.toString(),
+                      label: brand.fabric_brand_brands,
+                    })) || []
                   }
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select brand" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {brandData?.brand?.map((brand) => (
-                      <SelectItem
-                        key={brand.fabric_brand_brands}
-                        value={String(brand.fabric_brand_brands)}
-                      >
-                        {brand.fabric_brand_brands}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  value={
+                    brandData?.brand
+                      ?.map((brand) => ({
+                        value: brand.fabric_brand_brands.toString(),
+                        label: brand.fabric_brand_brands,
+                      }))
+                      .find(
+                        (opt) =>
+                          opt.value === String(workorder.work_order_brand),
+                      ) || null
+                  }
+                  onChange={(selected) => {
+                    setWorkOrder((prev) => ({
+                      ...prev,
+                      work_order_brand: selected?.value || "",
+                    }));
+                  }}
+                />
               </div>
 
               {/* Other Brand */}
@@ -474,27 +518,33 @@ if (isBrandLoading && isWidthLoading  && isRatioLoading && isHalfRatioLoading &&
                   Width <span className="text-red-500">*</span>
                 </Label>
                 <Select
-                  name="work_order_width"
-                  value={workorder.work_order_width}
-                  onValueChange={(value) =>
-                    setWorkOrder({ ...workorder, work_order_width: value })
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  placeholder="Search width..."
+                  options={
+                    widthData?.width?.map((width) => ({
+                      value: width.width_mea.toString(),
+                      label: width.width_mea,
+                    })) || []
                   }
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select width" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {widthData?.width?.map((width) => (
-                      <SelectItem
-                        key={width.width_mea}
-                        value={String(width.width_mea)}
-                      >
-                        {width.width_mea}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  value={
+                    widthData?.width
+                      ?.map((width) => ({
+                        value: width.width_mea.toString(),
+                        label: width.width_mea,
+                      }))
+                      .find(
+                        (opt) =>
+                          opt.value === String(workorder.work_order_width),
+                      ) || null
+                  }
+                  onChange={(selected) => {
+                    setWorkOrder((prev) => ({
+                      ...prev,
+                      work_order_width: selected?.value || "",
+                    }));
+                  }}
+                />
               </div>
 
               {/* Half Ratio */}
@@ -503,25 +553,35 @@ if (isBrandLoading && isWidthLoading  && isRatioLoading && isHalfRatioLoading &&
                   Half Ratio <span className="text-red-500">*</span>
                 </Label>
                 <Select
-                  name="work_order_ratio_h"
-                  value={workorder.work_order_ratio_h}
-                  onValueChange={(value) => {
-                    setWorkOrder({ ...workorder, work_order_ratio_h: value });
-                    setRatioValue(value);
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  placeholder="Search half ratio..."
+                  options={
+                    halfRatioData?.half_ratio?.map((hr, index) => ({
+                      value: hr.ratio_range.toString(),
+                      label: hr.ratio_range,
+                    })) || []
+                  }
+                  value={
+                    halfRatioData?.half_ratio
+                      ?.map((hr) => ({
+                        value: hr.ratio_range.toString(),
+                        label: hr.ratio_range,
+                      }))
+                      .find(
+                        (opt) =>
+                          opt.value === String(workorder.work_order_ratio_h),
+                      ) || null
+                  }
+                  onChange={(selected) => {
+                    setWorkOrder((prev) => ({
+                      ...prev,
+                      work_order_ratio_h: selected?.value || "",
+                    }));
+
+                    setRatioValue(selected?.value || "");
                   }}
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select half ratio" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {halfRatioData?.half_ratio?.map((hr, index) => (
-                      <SelectItem key={index} value={String(hr.ratio_range)}>
-                        {hr.ratio_range}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               </div>
 
               {/* Half Consumption */}
@@ -530,7 +590,7 @@ if (isBrandLoading && isWidthLoading  && isRatioLoading && isHalfRatioLoading &&
                   Half Consumption <span className="text-red-500">*</span>
                 </Label>
                 <Input
-                  type="number"
+                  type="text"
                   name="work_order_ratio_h_consumption"
                   value={workorder.work_order_ratio_h_consumption}
                   onChange={onInputChange}
@@ -544,27 +604,33 @@ if (isBrandLoading && isWidthLoading  && isRatioLoading && isHalfRatioLoading &&
                   Full Ratio <span className="text-red-500">*</span>
                 </Label>
                 <Select
-                  name="work_order_ratio"
-                  value={workorder.work_order_ratio}
-                  onValueChange={(value) =>
-                    setWorkOrder({ ...workorder, work_order_ratio: value })
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  placeholder="Search full ratio..."
+                  options={
+                    ratioData?.ratio?.map((ratio) => ({
+                      value: ratio.ratio_range.toString(),
+                      label: ratio.ratio_range,
+                    })) || []
                   }
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select full ratio" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ratioData?.ratio?.map((ratio) => (
-                      <SelectItem
-                        key={ratio.ratio_range}
-                        value={String(ratio.ratio_range)}
-                      >
-                        {ratio.ratio_range}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  value={
+                    ratioData?.ratio
+                      ?.map((ratio) => ({
+                        value: ratio.ratio_range.toString(),
+                        label: ratio.ratio_range,
+                      }))
+                      .find(
+                        (opt) =>
+                          opt.value === String(workorder.work_order_ratio),
+                      ) || null
+                  }
+                  onChange={(selected) => {
+                    setWorkOrder((prev) => ({
+                      ...prev,
+                      work_order_ratio: selected?.value || "",
+                    }));
+                  }}
+                />
               </div>
 
               {/* Full Consumption */}
@@ -573,7 +639,7 @@ if (isBrandLoading && isWidthLoading  && isRatioLoading && isHalfRatioLoading &&
                   Full Consumption <span className="text-red-500">*</span>
                 </Label>
                 <Input
-                  type="number"
+                  type="text"
                   name="work_order_ratio_consumption"
                   value={workorder.work_order_ratio_consumption}
                   onChange={onInputChange}
@@ -598,7 +664,6 @@ if (isBrandLoading && isWidthLoading  && isRatioLoading && isHalfRatioLoading &&
             <div className="space-y-2">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                 <h4 className="font-medium">Order Items</h4>
-                
               </div>
 
               <div className="overflow-x-auto">
@@ -800,7 +865,7 @@ if (isBrandLoading && isWidthLoading  && isRatioLoading && isHalfRatioLoading &&
                                     readOnly
                                   />
                                 </td>
-                              )
+                              ),
                             )}
 
                             {/* Half Shirt */}
@@ -850,13 +915,13 @@ if (isBrandLoading && isWidthLoading  && isRatioLoading && isHalfRatioLoading &&
                 </div>
               </div>
               <Button
-                  type="button"
-                  size="sm"
-                  onClick={addItem}
-                  className="w-full sm:w-auto"
-                >
-                  Add Item
-                </Button>
+                type="button"
+                size="sm"
+                onClick={addItem}
+                className="w-full sm:w-auto"
+              >
+                Add Item
+              </Button>
             </div>
 
             {/* Buttons */}
