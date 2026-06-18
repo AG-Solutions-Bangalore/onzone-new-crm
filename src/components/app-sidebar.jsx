@@ -25,12 +25,10 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 
-
 export function AppSidebar({ ...props }) {
   const nameL = localStorage.getItem("name");
   const emailL = localStorage.getItem("email");
   const userType = localStorage.getItem("userType");
-
 
   const initialData = {
     user: {
@@ -96,7 +94,6 @@ export function AppSidebar({ ...props }) {
             title: "Half Ratio",
             url: "/master/half-ratio",
           },
-          
         ],
       },
       {
@@ -136,7 +133,6 @@ export function AppSidebar({ ...props }) {
         isActive: false,
       },
 
-    
       {
         title: "Reports",
         url: "#",
@@ -159,14 +155,10 @@ export function AppSidebar({ ...props }) {
             title: "Sales Report",
             url: "/report/sales-report",
           },
-          
         ],
       },
-   
     ],
-
   };
-
 
   const data = {
     ...initialData,
@@ -179,12 +171,12 @@ export function AppSidebar({ ...props }) {
               icon: Blocks,
               isActive: false,
             },
-             {
-        title: "Order Received",
-        url: "/order-received",
-        icon: NotebookText,
-        isActive: false,
-      },
+            {
+              title: "Material Received",
+              url: "/order-received",
+              icon: NotebookText,
+              isActive: false,
+            },
           ]
         : initialData.navMain,
   };
@@ -195,9 +187,7 @@ export function AppSidebar({ ...props }) {
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent className="sidebar-content">
-       
         <NavMain items={data.navMain} />
- 
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

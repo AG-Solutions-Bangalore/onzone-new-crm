@@ -72,179 +72,170 @@ import AddStyle from "./AddStyle";
 import EditStyle from "./EditStyle";
 
 const StyleList = () => {
-   const { toast } = useToast();
-    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-    const [deleteWorkOrderId, setDeleteWorkOrderId] = useState(null);
-  
-    const {
-      data: style,
-      isLoading,
-      isError,
-      refetch,
-    } = useQuery({
-      queryKey: ["style"],
-      queryFn: async () => {
-        const token = localStorage.getItem("token");
-        const response = await axios.get(
-          `${BASE_URL}/api/fetch-style-list`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        return response.data.style;
-      },
-    });
-  
-    const deleteMutation = useMutation({
-      mutationFn: async (id) => {
-        const token = localStorage.getItem("token");
-        return await axios.delete(`${BASE_URL}/api/delete-style/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      },
-      onSuccess: (response) => {
-        refetch();
-        setDeleteConfirmOpen(false);
-        toast({
-          title: "Success",
-          description: `${response.data.msg}`,
-        });
-      },
-      onError: (error) => {
-        toast({
-          title: "Error",
-          description: `${error.response?.data?.message}`,
-          variant: "destructive",
-        });
-      }
-    });
-    const confirmDelete = (e) => {
-      e.preventDefault();
-    e.stopPropagation();
-      if (deleteWorkOrderId && !deleteMutation.isPending) {
-        deleteMutation.mutate(deleteWorkOrderId);
-       
-      }
-    };
-  
-    // State for table management
-    const [sorting, setSorting] = useState([]);
-    const [columnFilters, setColumnFilters] = useState([]);
-    const [columnVisibility, setColumnVisibility] = useState({});
-    const [rowSelection, setRowSelection] = useState({});
-    const navigate = useNavigate();
-  
-    // Define columns for the table
-    const columns = [
+  const { toast } = useToast();
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteWorkOrderId, setDeleteWorkOrderId] = useState(null);
 
-      {
-        accessorKey: "style_type",
-        id: "Style",
-        header: "Style",
-        cell: ({ row }) => <div>{row.getValue("Style")}</div>,
-      },
-  
-  
-      {
-        accessorKey: "style_status",
-        id: "Status",
-        header: "Status",
-        cell: ({ row }) => {
-          const status = row.getValue("Status");
-  
-          const statusColors = {
-            Active: "bg-green-100 text-green-800",
-            Inactive: "bg-red-100 text-red-800",
-          };
-  
-          return (
-            <span
-              className={`px-2 py-1 rounded text-xs ${
-                statusColors[status] || "bg-gray-100 text-gray-800"
-              }`}
-            >
-              {status}
-            </span>
-          );
-        },
-      },
-  
-      {
-        id: "actions",
-  
-        header: "Action",
-        cell: ({ row }) => {
-          const workOrderId = row.original.id;
-  
-          return (
-            <div className="flex flex-row">
-              <EditStyle styleId={workOrderId}/>
-  
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setDeleteWorkOrderId(workOrderId);
-                        setDeleteConfirmOpen(true);
-                      }}
-                    >
-                      <Trash className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Delete Style</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          );
-        },
-      },
-    ];
-  
-    // Create the table instance
-    const table = useReactTable({
-      data: style || [],
-      columns,
-      onSortingChange: setSorting,
-      onColumnFiltersChange: setColumnFilters,
-      getCoreRowModel: getCoreRowModel(),
-      getPaginationRowModel: getPaginationRowModel(),
-      getSortedRowModel: getSortedRowModel(),
-      getFilteredRowModel: getFilteredRowModel(),
-      onColumnVisibilityChange: setColumnVisibility,
-      onRowSelectionChange: setRowSelection,
-      state: {
-        sorting,
-        columnFilters,
-        columnVisibility,
-        rowSelection,
-      },
-      initialState: {
-        pagination: {
-          pageSize: 7,
-        },
-      },
-    });
-  
-    // Render loading state
-    if (isLoading) {
-      return <LoaderComponent name="Style Data" />;
+  const {
+    data: style,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ["style"],
+    queryFn: async () => {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${BASE_URL}/api/fetch-style-list`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data.style;
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id) => {
+      const token = localStorage.getItem("token");
+      return await axios.delete(`${BASE_URL}/api/delete-style/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    },
+    onSuccess: (response) => {
+      refetch();
+      setDeleteConfirmOpen(false);
+      toast({
+        title: "Success",
+        description: `${response.data.msg}`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `${error.response?.data?.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+  const confirmDelete = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (deleteWorkOrderId && !deleteMutation.isPending) {
+      deleteMutation.mutate(deleteWorkOrderId);
     }
-  
-    // Render error state
-    if (isError) {
-      return (
-        <ErrorComponent
-          message="Error Fetching Style  Data"
-          refetch={refetch}
-        />
-      );
-    }
+  };
+
+  // State for table management
+  const [sorting, setSorting] = useState([]);
+  const [columnFilters, setColumnFilters] = useState([]);
+  const [columnVisibility, setColumnVisibility] = useState({});
+  const [rowSelection, setRowSelection] = useState({});
+  const navigate = useNavigate();
+
+  // Define columns for the table
+  const columns = [
+    {
+      accessorKey: "style_type",
+      id: "Style",
+      header: "Style",
+      cell: ({ row }) => <div>{row.getValue("Style")}</div>,
+    },
+
+    {
+      accessorKey: "style_status",
+      id: "Status",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = row.getValue("Status");
+
+        const statusColors = {
+          Active: "bg-green-100 text-green-800",
+          Inactive: "bg-red-100 text-red-800",
+        };
+
+        return (
+          <span
+            className={`px-2 py-1 rounded text-xs ${
+              statusColors[status] || "bg-gray-100 text-gray-800"
+            }`}
+          >
+            {status}
+          </span>
+        );
+      },
+    },
+
+    {
+      id: "actions",
+
+      header: "Action",
+      cell: ({ row }) => {
+        const workOrderId = row.original.id;
+
+        return (
+          <div className="flex flex-row">
+            <EditStyle styleId={workOrderId} />
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setDeleteWorkOrderId(workOrderId);
+                      setDeleteConfirmOpen(true);
+                    }}
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Delete Style</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        );
+      },
+    },
+  ];
+
+  // Create the table instance
+  const table = useReactTable({
+    data: style || [],
+    columns,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      rowSelection,
+    },
+    initialState: {
+      pagination: {
+        pageSize: 7,
+      },
+    },
+  });
+
+  // Render loading state
+  if (isLoading) {
+    return <LoaderComponent name="Style Data" />;
+  }
+
+  // Render error state
+  if (isError) {
+    return (
+      <ErrorComponent message="Error Fetching Style  Data" refetch={refetch} />
+    );
+  }
   return (
     <Page>
-       <div className="w-full p-4">
+      <div className="w-full p-4">
         <div className="flex text-left text-2xl text-gray-800 font-[400]">
           Style List
         </div>
@@ -285,7 +276,7 @@ const StyleList = () => {
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-         <AddStyle/>
+          <AddStyle />
         </div>
         {/* table  */}
         <div className="rounded-md border">
@@ -303,7 +294,7 @@ const StyleList = () => {
                           ? null
                           : flexRender(
                               header.column.columnDef.header,
-                              header.getContext()
+                              header.getContext(),
                             )}
                       </TableHead>
                     );
@@ -322,7 +313,7 @@ const StyleList = () => {
                       <TableCell key={cell.id}>
                         {flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext()
+                          cell.getContext(),
                         )}
                       </TableCell>
                     ))}
@@ -383,34 +374,34 @@ const StyleList = () => {
               className={`${ButtonConfig.backgroundColor}  ${ButtonConfig.textColor} text-black hover:bg-red-600`}
               disabled={deleteMutation.isPending}
             >
-            {deleteMutation.isPending ? (
-          <div className="flex items-center gap-2">
-            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-            Processing...
-          </div>
-        ) : (
-          "Delete"
-        )}
+              {deleteMutation.isPending ? (
+                <div className="flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Processing...
+                </div>
+              ) : (
+                "Delete"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </Page>
-  )
-}
+  );
+};
 
-export default StyleList
+export default StyleList;

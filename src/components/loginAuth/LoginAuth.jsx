@@ -77,16 +77,13 @@ export default function LoginAuth() {
 
         console.log("Saving user details to local storage...");
         localStorage.setItem("token", UserInfo.token);
-      
+
         localStorage.setItem("id", UserInfo.user.id);
         localStorage.setItem("name", UserInfo.user.name);
         localStorage.setItem("userType", UserInfo.user.user_type_id);
-      
-     
+        localStorage.setItem("factory_id", UserInfo.user.factory_id);
+
         localStorage.setItem("email", UserInfo.user.email);
-
-
-       
 
         console.log("✅ Login successful! Redirecting to /home...");
         switch (UserInfo.user.user_type_id) {
@@ -102,7 +99,10 @@ export default function LoginAuth() {
         toast.error("Login Failed: Unexpected response.");
       }
     } catch (error) {
-      console.error("❌ Login Error:", error.response?.data || error.response?.data?.message);
+      console.error(
+        "❌ Login Error:",
+        error.response?.data || error.response?.data?.message,
+      );
 
       toast({
         variant: "destructive",
@@ -209,26 +209,18 @@ export default function LoginAuth() {
                 </motion.div>
               </div>
             </form>
-            <CardDescription
-          className="flex flex-row items-center justify-between"
-            >
-              <Link to={'/forgot-password'}>
-             <button
-                 className="cursor-pointer flex justify-end mt-4 underline"
-              >
-             Forgot Password
-             </button>
-             </Link>
-             <Link to={'/create-order'}>
-             <button
-                  className="cursor-pointer flex justify-end mt-4 underline"
-       
-                  >
-          Create Order
-             </button>
-             </Link>
+            <CardDescription className="flex flex-row items-center justify-between">
+              <Link to={"/forgot-password"}>
+                <button className="cursor-pointer flex justify-end mt-4 underline">
+                  Forgot Password
+                </button>
+              </Link>
+              <Link to={"/create-order"}>
+                <button className="cursor-pointer flex justify-end mt-4 underline">
+                  Create Order
+                </button>
+              </Link>
             </CardDescription>
-         
           </CardContent>
         </Card>
       </motion.div>

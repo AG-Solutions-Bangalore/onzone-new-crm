@@ -1,6 +1,3 @@
-
-
-
 import { useState } from "react";
 
 import { useNavigate } from "react-router-dom";
@@ -25,7 +22,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import BASE_URL from "@/config/BaseUrl";
 import Page from "@/app/dashboard/page";
-
 
 const ratioGroup = [
   { value: "a", label: "a" },
@@ -135,7 +131,6 @@ const AddHalfRatio = () => {
 
   return (
     <Page>
-  
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col md:flex-row justify-between items-center bg-card p-4 rounded-lg shadow mb-6">
           <h3 className="text-lg md:text-xl font-bold">Create Half Ratio</h3>
@@ -265,7 +260,9 @@ const AddHalfRatio = () => {
                   disabled={createRatioMutation.isPending}
                   className="gap-2"
                 >
-                  {createRatioMutation.isPending ? "Submitting..." : (
+                  {createRatioMutation.isPending ? (
+                    "Submitting..."
+                  ) : (
                     <>
                       <Send className="h-4 w-4" />
                       Submit
@@ -273,7 +270,7 @@ const AddHalfRatio = () => {
                   )}
                 </Button>
 
-                <Link to="/half-ratio">
+                <Link to="/master/half-ratio">
                   <Button variant="outline" className="gap-2">
                     <ArrowLeft className="h-4 w-4" />
                     Back

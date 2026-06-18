@@ -1,37 +1,40 @@
-import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { ArrowLeft, Send } from 'lucide-react'
-import * as z from 'zod'
-import axios from 'axios'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { ArrowLeft, Send } from "lucide-react";
+import * as z from "zod";
+import axios from "axios";
+import { Link } from "react-router-dom";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import BASE_URL from '@/config/BaseUrl'
-import Page from '@/app/dashboard/page'
-import { useToast } from '@/hooks/use-toast'
-import { ErrorComponent, LoaderComponent } from '@/components/LoaderComponent/LoaderComponent'
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import BASE_URL from "@/config/BaseUrl";
+import Page from "@/app/dashboard/page";
+import { useToast } from "@/hooks/use-toast";
+import {
+  ErrorComponent,
+  LoaderComponent,
+} from "@/components/LoaderComponent/LoaderComponent";
 
 const statusOptions = [
   { value: "Active", label: "Active" },
   { value: "Inactive", label: "Inactive" },
-]
+];
 
 const ratioGroupOptions = [
   { value: "a", label: "a" },
   { value: "ab", label: "ab" },
   { value: "abc", label: "abc" },
-]
+];
 
 const ratioSchema = z.object({
   ratio_range: z.string().min(1, "Ratio range is required"),
@@ -44,12 +47,12 @@ const ratioSchema = z.object({
   ratio_type46: z.string().min(1, "Ratio 46 is required"),
   ratio_type48: z.string().min(1, "Ratio 48 is required"),
   ratio_type50: z.string().min(1, "Ratio 50 is required"),
-})
+});
 
 const EditHalfRatio = () => {
-  const { id } = useParams()
-  const { toast } = useToast()
-  const navigate = useNavigate()
+  const { id } = useParams();
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const [ratioValues, setRatioValues] = useState({
     ratio_range: "",
     ratio_group: "",
@@ -61,11 +64,11 @@ const EditHalfRatio = () => {
     ratio_type46: "",
     ratio_type48: "",
     ratio_type50: "",
-  })
+  });
 
   // Fetch ratio data
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['half-ratio', id],
+    queryKey: ["half-ratio", id],
     queryFn: async () => {
       const response = await axios.get(
         `${BASE_URL}/api/fetch-half-ratio-by-id/${id}`,
@@ -73,18 +76,18 @@ const EditHalfRatio = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
-      )
-      return response.data
+        },
+      );
+      return response.data;
     },
-  })
+  });
 
   // Use useEffect to populate the form when data is loaded
   useEffect(() => {
     if (data?.ratioHalf) {
-      const ratioData = data.ratioHalf
-      const ratioTypes = ratioData.ratio_type.split(",")
-      
+      const ratioData = data.ratioHalf;
+      const ratioTypes = ratioData.ratio_type.split(",");
+
       setRatioValues({
         ratio_range: ratioData.ratio_range,
         ratio_group: ratioData.ratio_group,
@@ -96,9 +99,9 @@ const EditHalfRatio = () => {
         ratio_type46: ratioTypes[4] || "",
         ratio_type48: ratioTypes[5] || "",
         ratio_type50: ratioTypes[6] || "",
-      })
+      });
     }
-  }, [data])
+  }, [data]);
 
   // Handle errors with useEffect
   useEffect(() => {
@@ -107,9 +110,9 @@ const EditHalfRatio = () => {
         variant: "destructive",
         title: "Error",
         description: "Failed to fetch ratio data",
-      })
+      });
     }
-  }, [isError, toast])
+  }, [isError, toast]);
 
   // Update ratio mutation
   const updateRatioMutation = useMutation({
@@ -121,54 +124,54 @@ const EditHalfRatio = () => {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-      })
-      return response.data
+      });
+      return response.data;
     },
     onSuccess: (data) => {
       if (data.code === 200) {
         toast({
           title: "Success",
           description: `${data.msg}`,
-        })
-        navigate("/master/half-ratio")
+        });
+        navigate("/master/half-ratio");
       } else {
-        throw new Error(data.msg || "Update failed")
+        throw new Error(data.msg || "Update failed");
       }
     },
     onError: (error) => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.response?.data?.message.includes("duplicate") 
-          ? "Duplicate entry" 
+        description: error.response?.data?.message.includes("duplicate")
+          ? "Duplicate entry"
           : "Update failed",
-      })
-    }
-  })
+      });
+    },
+  });
 
   const onInputChange = (e) => {
-    const { name, value } = e.target
-    setRatioValues(prev => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setRatioValues((prev) => ({ ...prev, [name]: value }));
+  };
 
   const onSubmit = (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     try {
-      const validatedData = ratioSchema.parse(ratioValues)
-      updateRatioMutation.mutate(validatedData)
+      const validatedData = ratioSchema.parse(ratioValues);
+      updateRatioMutation.mutate(validatedData);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        error.errors.forEach(err => {
+        error.errors.forEach((err) => {
           toast({
             variant: "destructive",
             title: "Validation Error",
             description: err.message,
-          })
-        })
+          });
+        });
       }
     }
-  }
+  };
 
   if (isLoading) {
     return <LoaderComponent name="Edit half ratio Data" />;
@@ -215,8 +218,11 @@ const EditHalfRatio = () => {
                   <Select
                     name="ratio_group"
                     value={ratioValues.ratio_group}
-                    onValueChange={(value) => 
-                      setRatioValues(prev => ({ ...prev, ratio_group: value }))
+                    onValueChange={(value) =>
+                      setRatioValues((prev) => ({
+                        ...prev,
+                        ratio_group: value,
+                      }))
                     }
                   >
                     <SelectTrigger>
@@ -238,8 +244,11 @@ const EditHalfRatio = () => {
                   <Select
                     name="ratio_status"
                     value={ratioValues.ratio_status}
-                    onValueChange={(value) => 
-                      setRatioValues(prev => ({ ...prev, ratio_status: value }))
+                    onValueChange={(value) =>
+                      setRatioValues((prev) => ({
+                        ...prev,
+                        ratio_status: value,
+                      }))
                     }
                   >
                     <SelectTrigger>
@@ -341,7 +350,9 @@ const EditHalfRatio = () => {
                   disabled={updateRatioMutation.isPending}
                   className="gap-2"
                 >
-                  {updateRatioMutation.isPending ? "Updating..." : (
+                  {updateRatioMutation.isPending ? (
+                    "Updating..."
+                  ) : (
                     <>
                       <Send className="h-4 w-4" />
                       Update
@@ -349,7 +360,7 @@ const EditHalfRatio = () => {
                   )}
                 </Button>
 
-                <Link to="/half-ratio">
+                <Link to="/master/half-ratio">
                   <Button variant="outline" className="gap-2">
                     <ArrowLeft className="h-4 w-4" />
                     Back
@@ -361,7 +372,7 @@ const EditHalfRatio = () => {
         </Card>
       </div>
     </Page>
-  )
-}
+  );
+};
 
-export default EditHalfRatio
+export default EditHalfRatio;
