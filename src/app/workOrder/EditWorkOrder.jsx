@@ -6,13 +6,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import Select from "react-select";
 import { Textarea } from "@/components/ui/textarea";
 
 import axios from "axios";
@@ -30,7 +24,10 @@ import * as z from "zod";
 import BASE_URL from "@/config/BaseUrl";
 import Page from "../dashboard/page";
 import { useToast } from "@/hooks/use-toast";
-import { ErrorComponent, LoaderComponent } from "@/components/LoaderComponent/LoaderComponent";
+import {
+  ErrorComponent,
+  LoaderComponent,
+} from "@/components/LoaderComponent/LoaderComponent";
 
 const formSchema = z.object({
   work_order_year: z.string(),
@@ -60,7 +57,7 @@ const formSchema = z.object({
       work_order_sub_half_shirt: z.string().min(1, "Half Shirt is required"),
       work_order_sub_full_shirt: z.string().min(1, "Full Shirt is required"),
       work_order_sub_amount: z.string().min(1, "Mrp is required"),
-    })
+    }),
   ),
   work_order_ratio: z.string().min(1, "Full ratio is required"),
   work_order_ratio_consumption: z
@@ -116,13 +113,13 @@ const EditWorkOrder = () => {
     work_order_ratio_consumption: "",
     work_order_ratio_h: "",
     work_order_ratio_h_consumption: "",
-    work_order_no:""
+    work_order_no: "",
   });
 
   const [work_order_count, setCount] = useState(0);
   const [ratioValue, setRatioValue] = useState("");
   const [removedRows, setRemovedRows] = useState([]);
-  const [users, setUsers] = useState([{...useTemplate}]);
+  const [users, setUsers] = useState([{ ...useTemplate }]);
   const [isInitialDataLoaded, setIsInitialDataLoaded] = useState(false);
 
   // Fetch work order data
@@ -139,7 +136,7 @@ const EditWorkOrder = () => {
         `${BASE_URL}/api/fetch-work-order-by-id/${id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
       return response.data;
     },
@@ -148,7 +145,7 @@ const EditWorkOrder = () => {
   useEffect(() => {
     if (workorderData && !isInitialDataLoaded) {
       const { workorder: wo, workordersub: wos } = workorderData;
-      
+
       // Set main work order data
       setWorkOrder({
         work_order_year: wo?.work_order_year || "",
@@ -162,10 +159,11 @@ const EditWorkOrder = () => {
         work_order_ratio: wo?.work_order_ratio || "",
         work_order_ratio_consumption: wo?.work_order_ratio_consumption || "",
         work_order_ratio_h: wo?.work_order_ratio_h || "",
-        work_order_ratio_h_consumption: wo?.work_order_ratio_h_consumption || "",
+        work_order_ratio_h_consumption:
+          wo?.work_order_ratio_h_consumption || "",
         work_order_no: wo?.work_order_no || "",
       });
-      
+
       setRatioValue(wo?.work_order_ratio_h || "");
       setCount(wo?.work_order_count || 0);
 
@@ -186,16 +184,18 @@ const EditWorkOrder = () => {
           work_order_sub_b: String(sub.work_order_sub_b || ""),
           work_order_sub_c: String(sub.work_order_sub_c || ""),
           work_order_sub_length: String(sub.work_order_sub_length || 0),
-          work_order_sub_new_length: String(sub.work_order_sub_new_length || ""),
+          work_order_sub_new_length: String(
+            sub.work_order_sub_new_length || "",
+          ),
           work_order_sub_half_shirt: String(sub.work_order_sub_half_total || 0),
           work_order_sub_full_shirt: String(sub.work_order_sub_full_total || 0),
           work_order_sub_amount: String(sub.work_order_sub_amount || 0),
         }));
         setUsers(mappedUsers);
       } else {
-        setUsers([{...useTemplate}]);
+        setUsers([{ ...useTemplate }]);
       }
-      
+
       setIsInitialDataLoaded(true);
     }
   }, [workorderData, isInitialDataLoaded]);
@@ -241,56 +241,57 @@ const EditWorkOrder = () => {
 
   const onChange = (e, index) => {
     const updatedUsers = users.map((user, i) =>
-      index === i ? { ...user, [e.target.name]: e.target.value } : user
+      index === i ? { ...user, [e.target.name]: e.target.value } : user,
     );
     setUsers(updatedUsers);
   };
 
   const removeUser = (index) => {
     const userToRemove = users[index];
-  
+
     if (!userToRemove.id) {
       const updatedUsers = users.filter((_, i) => i !== index);
       setUsers(updatedUsers);
       setCount(work_order_count - 1);
       return;
     }
-  
+
     const updatedUsers = [...users];
-    updatedUsers[index].markedForRemoval = !updatedUsers[index].markedForRemoval;
+    updatedUsers[index].markedForRemoval =
+      !updatedUsers[index].markedForRemoval;
     setUsers(updatedUsers);
-  
+
     if (updatedUsers[index].markedForRemoval) {
       setRemovedRows([...removedRows, userToRemove.id]);
     } else {
-      setRemovedRows(removedRows.filter(id => id !== userToRemove.id));
+      setRemovedRows(removedRows.filter((id) => id !== userToRemove.id));
     }
   };
 
   const calculateHalfValues = (index, field, value) => {
     const newValue = halfRatioData?.half_ratio?.find(
-      (item) => item.ratio_range === ratioValue
+      (item) => item.ratio_range === ratioValue,
     );
     if (!newValue) return;
 
     const tempUsers = [...users];
-   
+
     tempUsers[index][`work_order_sub_${field}`] = value;
 
     const parts = newValue.ratio_type.split(",");
 
     ["38", "40", "42", "44", "46", "48", "50"].forEach((size, i) => {
       if (parts[i] && parts[i][1] === field) {
-        tempUsers[index][`work_order_sub_${size}_h`] = (
-          parseFloat(value) * parseFloat(parts[i].replace(/\D/g, ""))
-          .toString())
+        tempUsers[index][`work_order_sub_${size}_h`] =
+          parseFloat(value) *
+          parseFloat(parts[i].replace(/\D/g, "")).toString();
       }
     });
 
     const halfShirtTotal = ["38", "40", "42", "44", "46", "48", "50"].reduce(
       (sum, size) =>
         sum + parseFloat(tempUsers[index][`work_order_sub_${size}_h`] || 0),
-      0
+      0,
     );
 
     tempUsers[index].work_order_sub_half_shirt = halfShirtTotal.toFixed(2);
@@ -308,7 +309,7 @@ const EditWorkOrder = () => {
     setUsers(tempUsers);
 
     const hasNegative = tempUsers.some(
-      (user) => Math.sign(parseFloat(user.work_order_sub_full_shirt)) === -1
+      (user) => Math.sign(parseFloat(user.work_order_sub_full_shirt)) === -1,
     );
 
     if (hasNegative) {
@@ -354,7 +355,7 @@ const EditWorkOrder = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        }
+        },
       );
       return response.data;
     },
@@ -378,7 +379,7 @@ const EditWorkOrder = () => {
         variant: "destructive",
         title: "Error",
         description:
-        error.response?.data?.message || "Update failed. Please try again.",
+          error.response?.data?.message || "Update failed. Please try again.",
       });
     },
   });
@@ -387,7 +388,7 @@ const EditWorkOrder = () => {
     e.preventDefault();
 
     const hasNegative = users.some(
-      (user) => Math.sign(parseFloat(user.work_order_sub_full_shirt)) === -1
+      (user) => Math.sign(parseFloat(user.work_order_sub_full_shirt)) === -1,
     );
 
     if (hasNegative) {
@@ -400,17 +401,19 @@ const EditWorkOrder = () => {
     }
 
     // const filteredUsers = users.filter((user) => !user.markedForRemoval);
-    const filteredUsers = users.filter((user) => !user.markedForRemoval).map(user => ({
-      ...user,
-      work_order_sub_36_h: String(user.work_order_sub_36_h),
-      work_order_sub_38_h: String(user.work_order_sub_38_h),
-      work_order_sub_40_h: String(user.work_order_sub_40_h),
-      work_order_sub_42_h: String(user.work_order_sub_42_h),
-      work_order_sub_44_h: String(user.work_order_sub_44_h),
-      work_order_sub_46_h: String(user.work_order_sub_46_h),
-      work_order_sub_48_h: String(user.work_order_sub_48_h),
-      work_order_sub_50_h: String(user.work_order_sub_50_h),
-    }));
+    const filteredUsers = users
+      .filter((user) => !user.markedForRemoval)
+      .map((user) => ({
+        ...user,
+        work_order_sub_36_h: String(user.work_order_sub_36_h),
+        work_order_sub_38_h: String(user.work_order_sub_38_h),
+        work_order_sub_40_h: String(user.work_order_sub_40_h),
+        work_order_sub_42_h: String(user.work_order_sub_42_h),
+        work_order_sub_44_h: String(user.work_order_sub_44_h),
+        work_order_sub_46_h: String(user.work_order_sub_46_h),
+        work_order_sub_48_h: String(user.work_order_sub_48_h),
+        work_order_sub_50_h: String(user.work_order_sub_50_h),
+      }));
     const data = {
       work_order_year: workorder.work_order_year,
       work_order_factory_no: workorder.work_order_factory_no,
@@ -425,7 +428,7 @@ const EditWorkOrder = () => {
       work_order_ratio_consumption: workorder.work_order_ratio_consumption,
       work_order_ratio_h: workorder.work_order_ratio_h,
       work_order_ratio_h_consumption: workorder.work_order_ratio_h_consumption,
-      removed_rows: removedRows, 
+      removed_rows: removedRows,
     };
 
     const validation = formSchema.safeParse(data);
@@ -436,7 +439,7 @@ const EditWorkOrder = () => {
         description: (
           <div className="grid gap-1">
             {validation.error.errors.map((error, i) => {
-              const field = error.path[0].replace(/_/g, ' ');
+              const field = error.path[0].replace(/_/g, " ");
               const label = field.charAt(0).toUpperCase() + field.slice(1);
               return (
                 <div key={i} className="flex items-start gap-2">
@@ -444,7 +447,8 @@ const EditWorkOrder = () => {
                     {i + 1}
                   </div>
                   <p className="text-xs">
-                    <span className="font-medium">{label}:</span> {error.message}
+                    <span className="font-medium">{label}:</span>{" "}
+                    {error.message}
                   </p>
                 </div>
               );
@@ -459,7 +463,7 @@ const EditWorkOrder = () => {
   };
 
   if (isLoading || !isInitialDataLoaded) {
-    return <LoaderComponent name="Work Order Data" />; 
+    return <LoaderComponent name="Work Order Data" />;
   }
 
   if (isError) {
@@ -475,7 +479,7 @@ const EditWorkOrder = () => {
     <Page>
       <div className="space-y-4">
         <h3 className="text-lg font-bold text-center md:text-left md:text-xl">
-          Edit Work Order - {workorder?.work_order_no}
+          Edit Work Order
         </h3>
 
         <div className="p-4 bg-white rounded-lg shadow">
@@ -487,27 +491,33 @@ const EditWorkOrder = () => {
                   Factory <span className="text-red-500">*</span>
                 </Label>
                 <Select
-                  name="work_order_factory_no"
-                  value={workorder.work_order_factory_no}
-                  onValueChange={(value) =>
-                    setWorkOrder({ ...workorder, work_order_factory_no: value })
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  placeholder="Search factory..."
+                  options={
+                    factoryData?.factory?.map((factory) => ({
+                      value: factory.factory_no.toString(),
+                      label: factory.factory_name,
+                    })) || []
                   }
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select factory" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {factoryData?.factory?.map((factory) => (
-                      <SelectItem
-                        key={factory.factory_no}
-                        value={String(factory.factory_no)}
-                      >
-                        {factory.factory_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  value={
+                    factoryData?.factory
+                      ?.map((factory) => ({
+                        value: factory.factory_no.toString(),
+                        label: factory.factory_name,
+                      }))
+                      .find(
+                        (opt) =>
+                          opt.value === String(workorder.work_order_factory_no),
+                      ) || null
+                  }
+                  onChange={(selected) => {
+                    setWorkOrder((prev) => ({
+                      ...prev,
+                      work_order_factory_no: selected?.value || "",
+                    }));
+                  }}
+                />
               </div>
 
               {/* Brand */}
@@ -516,27 +526,33 @@ const EditWorkOrder = () => {
                   Brand <span className="text-red-500">*</span>
                 </Label>
                 <Select
-                  name="work_order_brand"
-                  value={workorder.work_order_brand}
-                  onValueChange={(value) =>
-                    setWorkOrder({ ...workorder, work_order_brand: value })
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  placeholder="Search brand..."
+                  options={
+                    brandData?.brand?.map((brand) => ({
+                      value: brand.fabric_brand_brands.toString(),
+                      label: brand.fabric_brand_brands,
+                    })) || []
                   }
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select brand" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {brandData?.brand?.map((brand) => (
-                      <SelectItem
-                        key={brand.fabric_brand_brands}
-                        value={String(brand.fabric_brand_brands)}
-                      >
-                        {brand.fabric_brand_brands}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  value={
+                    brandData?.brand
+                      ?.map((brand) => ({
+                        value: brand.fabric_brand_brands.toString(),
+                        label: brand.fabric_brand_brands,
+                      }))
+                      .find(
+                        (opt) =>
+                          opt.value === String(workorder.work_order_brand),
+                      ) || null
+                  }
+                  onChange={(selected) => {
+                    setWorkOrder((prev) => ({
+                      ...prev,
+                      work_order_brand: selected?.value || "",
+                    }));
+                  }}
+                />
               </div>
 
               {/* Other Brand */}
@@ -559,27 +575,34 @@ const EditWorkOrder = () => {
                   Width <span className="text-red-500">*</span>
                 </Label>
                 <Select
-                  name="work_order_width"
-                  value={workorder.work_order_width}
-                  onValueChange={(value) =>
-                    setWorkOrder({ ...workorder, work_order_width: value })
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  placeholder="Search width..."
+                  options={
+                    widthData?.width?.map((width) => ({
+                      value: width.width_mea.toString(),
+                      label: width.width_mea,
+                    })) || []
                   }
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select width" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {widthData?.width?.map((width) => (
-                      <SelectItem
-                        key={width.width_mea}
-                        value={String(width.width_mea)}
-                      >
-                        {width.width_mea}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  value={
+                    widthData?.width
+                      ?.map((width) => ({
+                        value: width.width_mea.toString(),
+                        label: width.width_mea,
+                      }))
+                      .find(
+                        (opt) =>
+                          opt.value === String(workorder.work_order_width),
+                      ) || null
+                  }
+                  onChange={(selected) => {
+                    setWorkOrder((prev) => ({
+                      ...prev,
+                      work_order_width: selected?.value || "",
+                    }));
+                  }}
+                  isClearable
+                />
               </div>
 
               {/* Half Ratio */}
@@ -587,26 +610,40 @@ const EditWorkOrder = () => {
                 <Label htmlFor="work_order_ratio_h">
                   Half Ratio <span className="text-red-500">*</span>
                 </Label>
+
                 <Select
-                  name="work_order_ratio_h"
-                  value={workorder.work_order_ratio_h}
-                  onValueChange={(value) => {
-                    setWorkOrder({ ...workorder, work_order_ratio_h: value });
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  placeholder="Search half ratio..."
+                  options={
+                    halfRatioData?.half_ratio?.map((hr) => ({
+                      value: hr.ratio_range.toString(),
+                      label: hr.ratio_range,
+                    })) || []
+                  }
+                  value={
+                    halfRatioData?.half_ratio
+                      ?.map((hr) => ({
+                        value: hr.ratio_range.toString(),
+                        label: hr.ratio_range,
+                      }))
+                      .find(
+                        (opt) =>
+                          opt.value === String(workorder.work_order_ratio_h),
+                      ) || null
+                  }
+                  onChange={(selected) => {
+                    const value = selected?.value || "";
+
+                    setWorkOrder((prev) => ({
+                      ...prev,
+                      work_order_ratio_h: value,
+                    }));
+
                     setRatioValue(value);
                   }}
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select half ratio" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {halfRatioData?.half_ratio?.map((hr, index) => (
-                      <SelectItem key={index} value={String(hr.ratio_range)}>
-                        {hr.ratio_range}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  isClearable
+                />
               </div>
 
               {/* Half Consumption */}
@@ -615,7 +652,7 @@ const EditWorkOrder = () => {
                   Half Consumption <span className="text-red-500">*</span>
                 </Label>
                 <Input
-                  type="number"
+                  type="text"
                   name="work_order_ratio_h_consumption"
                   value={workorder.work_order_ratio_h_consumption}
                   onChange={onInputChange}
@@ -629,27 +666,34 @@ const EditWorkOrder = () => {
                   Full Ratio <span className="text-red-500">*</span>
                 </Label>
                 <Select
-                  name="work_order_ratio"
-                  value={workorder.work_order_ratio}
-                  onValueChange={(value) =>
-                    setWorkOrder({ ...workorder, work_order_ratio: value })
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                  placeholder="Search full ratio..."
+                  options={
+                    ratioData?.ratio?.map((ratio) => ({
+                      value: ratio.ratio_range.toString(),
+                      label: ratio.ratio_range,
+                    })) || []
                   }
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select full ratio" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ratioData?.ratio?.map((ratio) => (
-                      <SelectItem
-                        key={ratio.ratio_range}
-                        value={String(ratio.ratio_range)}
-                      >
-                        {ratio.ratio_range}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  value={
+                    ratioData?.ratio
+                      ?.map((ratio) => ({
+                        value: ratio.ratio_range.toString(),
+                        label: ratio.ratio_range,
+                      }))
+                      .find(
+                        (opt) =>
+                          opt.value === String(workorder.work_order_ratio),
+                      ) || null
+                  }
+                  onChange={(selected) => {
+                    setWorkOrder((prev) => ({
+                      ...prev,
+                      work_order_ratio: selected?.value || "",
+                    }));
+                  }}
+                  isClearable
+                />
               </div>
 
               {/* Full Consumption */}
@@ -658,7 +702,7 @@ const EditWorkOrder = () => {
                   Full Consumption <span className="text-red-500">*</span>
                 </Label>
                 <Input
-                  type="number"
+                  type="text"
                   name="work_order_ratio_consumption"
                   value={workorder.work_order_ratio_consumption}
                   onChange={onInputChange}
@@ -683,7 +727,6 @@ const EditWorkOrder = () => {
             <div className="space-y-2">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                 <h4 className="font-medium">Order Items</h4>
-               
               </div>
 
               <div className="overflow-x-auto">
@@ -747,14 +790,14 @@ const EditWorkOrder = () => {
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {users.map((user, index) => (
-                        <tr
-                        key={index}
-                        className={
-                          user.markedForRemoval 
-                            ? "bg-red-50 hover:bg-red-100" 
-                            : "hover:bg-gray-50"
-                        }
-                      >
+                          <tr
+                            key={index}
+                            className={
+                              user.markedForRemoval
+                                ? "bg-red-50 hover:bg-red-100"
+                                : "hover:bg-gray-50"
+                            }
+                          >
                             {/* T Code */}
                             <td className="px-1 py-1 whitespace-nowrap">
                               <Input
@@ -892,7 +935,7 @@ const EditWorkOrder = () => {
                                     readOnly
                                   />
                                 </td>
-                              )
+                              ),
                             )}
 
                             {/* Half Shirt */}
@@ -930,7 +973,9 @@ const EditWorkOrder = () => {
                                 onClick={() => removeUser(index)}
                                 className={`h-8 w-8 p-0 ${user.markedForRemoval ? "bg-red-100" : ""}`}
                               >
-                                <Trash2 className={`w-3 h-3 ${user.markedForRemoval ? "text-red-700" : "text-red-500"}`} />
+                                <Trash2
+                                  className={`w-3 h-3 ${user.markedForRemoval ? "text-red-700" : "text-red-500"}`}
+                                />
                               </Button>
                             </td>
                           </tr>
@@ -941,13 +986,13 @@ const EditWorkOrder = () => {
                 </div>
               </div>
               <Button
-                  type="button"
-                  size="sm"
-                  onClick={addItem}
-                  className="w-full sm:w-auto"
-                >
-                  Add Item
-                </Button>
+                type="button"
+                size="sm"
+                onClick={addItem}
+                className="w-full sm:w-auto"
+              >
+                Add Item
+              </Button>
             </div>
 
             {/* Buttons */}

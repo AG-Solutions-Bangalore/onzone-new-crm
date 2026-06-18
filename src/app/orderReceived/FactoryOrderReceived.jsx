@@ -3,15 +3,26 @@ import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { z } from "zod";
 
-import { Trash2, ChevronLeft, Plus, Minus, Loader2 } from "lucide-react";
-
 import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+  Trash2,
+  ChevronLeft,
+  Plus,
+  Minus,
+  Loader2,
+  ChevronsUpDown,
+} from "lucide-react";
+
+import { Check } from "lucide-react";
+// import {
+//   Combobox,
+//   ComboboxContent,
+//   ComboboxEmpty,
+//   ComboboxInput,
+//   ComboboxItem,
+//   ComboboxList,
+// } from "@/components/ui/combobox";
+
+import Select from "react-select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -25,7 +36,11 @@ import dateyear from "@/utils/DateYear";
 import { useFetchFactory } from "@/hooks/useApi";
 import { LoaderComponent } from "@/components/LoaderComponent/LoaderComponent";
 import { Textarea } from "@/components/ui/textarea";
-
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 const orderSchema = z.object({
   work_order_rc_year: z.string(),
   work_order_rc_date: z.string().min(1, "Date is required"),
@@ -54,7 +69,6 @@ const FactoryOrderReceived = () => {
   const { toast } = useToast();
 
   const storedFactoryName = localStorage.getItem("name");
-
   const [selectedFactory, setSelectedFactory] = useState(null);
   const [isFactoryLoading, setIsFactoryLoading] = useState(true);
 
@@ -81,6 +95,7 @@ const FactoryOrderReceived = () => {
   const [loadingStates, setLoadingStates] = useState({});
 
   const [duplicateBarcodes, setDuplicateBarcodes] = useState({});
+  const [open, setOpen] = useState(false);
   const [activeInputIndex, setActiveInputIndex] = useState(null);
   const [currentInputValue, setCurrentInputValue] = useState("");
   const [highlightedItem, setHighlightedItem] = useState(null);
@@ -495,40 +510,41 @@ const FactoryOrderReceived = () => {
                 </div> */}
 
                 {/* Work Order ID */}
+
                 <div className="space-y-1">
                   <Label htmlFor="workOrderId">
                     Work Order ID <span className="text-red-500">*</span>
                   </Label>
                   <Select
-                    name="work_order_rc_id"
-                    value={workorder.work_order_rc_id}
-                    onValueChange={(value) => {
-                      const selectedWorkOrder = workOrders.find(
-                        (item) => item.id === value,
+                    options={workOrders.map((item) => ({
+                      value: item.id,
+                      label: item.work_order_no,
+                    }))}
+                    value={
+                      workOrders
+                        .filter(
+                          (item) => item.id === workorder.work_order_rc_id,
+                        )
+                        .map((item) => ({
+                          value: item.id,
+                          label: item.work_order_no,
+                        }))[0] || null
+                    }
+                    onChange={(selected) => {
+                      const workOrder = workOrders.find(
+                        (item) => item.id === selected.value,
                       );
-                      setWorkorder({
-                        ...workorder,
-                        work_order_rc_id: selectedWorkOrder?.id,
-                        work_order_no: selectedWorkOrder.work_order_no,
-                      });
-                    }}
-                    disabled={!workorder.work_order_rc_factory_no}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select work order">
-                        {workorder.work_order_no || "Select work order"}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {workOrders.map((workOrder) => (
-                        <SelectItem key={workOrder.id} value={workOrder.id}>
-                          {workOrder.work_order_no}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
 
+                      setWorkorder((prev) => ({
+                        ...prev,
+                        work_order_rc_id: workOrder.id,
+                        work_order_no: workOrder.work_order_no,
+                      }));
+                    }}
+                    isSearchable
+                    placeholder="Search Work Order"
+                  />
+                </div>
                 {/* Brand */}
                 <div className="space-y-1">
                   <Label htmlFor="brand">Brand (read only)</Label>

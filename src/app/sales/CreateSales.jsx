@@ -3,14 +3,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { z } from "zod";
 import { Trash2, ChevronLeft, Plus, Minus, Loader2 } from "lucide-react";
+import Select from "react-select";
 
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+// import {
+//   SelectTrigger,
+//   SelectValue,
+//   SelectContent,
+//   SelectItem,
+// } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -64,14 +64,14 @@ const CreateSales = () => {
   const submitMutation = useMutation({
     mutationFn: async (data) => {
       const token = localStorage.getItem("token");
-      
+
       const submissionData = {
         ...data,
-        workorder_sub_sa_data: data.barcodes.map(barcode => ({
-          work_order_sa_sub_barcode: barcode
-        }))
+        workorder_sub_sa_data: data.barcodes.map((barcode) => ({
+          work_order_sa_sub_barcode: barcode,
+        })),
       };
-      
+
       const response = await fetch(`${BASE_URL}/api/create-work-order-sales`, {
         method: "POST",
         headers: {
@@ -119,18 +119,18 @@ const CreateSales = () => {
   const calculateDuplicates = (barcodes) => {
     const duplicates = {};
     const seen = {};
-    
-    barcodes.forEach(barcode => {
+
+    barcodes.forEach((barcode) => {
       if (seen[barcode]) {
         duplicates[barcode] = (duplicates[barcode] || 1) + 1;
       } else {
         seen[barcode] = true;
       }
     });
-    
+
     return duplicates;
   };
-  
+
   useEffect(() => {
     setDuplicateBarcodes(calculateDuplicates(barcodes));
   }, [barcodes]);
@@ -141,7 +141,7 @@ const CreateSales = () => {
 
   const addBarcode = async () => {
     if (!currentInputValue.trim()) return;
-    
+
     const maxPcs = parseInt(workorder.work_order_sa_pcs || 0, 10);
     if (barcodes.length >= maxPcs) {
       toast({
@@ -151,7 +151,7 @@ const CreateSales = () => {
       });
       return;
     }
-    
+
     // Validate barcode format (6 digits)
     const barcode = currentInputValue.trim();
     if (barcode.length !== 6) {
@@ -162,9 +162,9 @@ const CreateSales = () => {
       });
       return;
     }
-    
+
     setLoading(true);
-    
+
     try {
       // Check if barcode exists in received orders
       const token = localStorage.getItem("token");
@@ -174,7 +174,7 @@ const CreateSales = () => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (!response.ok) throw new Error("Barcode validation failed");
@@ -184,13 +184,13 @@ const CreateSales = () => {
         // Add the barcode
         setBarcodes([...barcodes, barcode]);
         setCurrentInputValue("");
-        
+
         toast({
           title: "Success",
           description: "Barcode added successfully",
           variant: "default",
         });
-        
+
         // Keep focus on input
         setTimeout(() => {
           inputRef.current?.focus();
@@ -198,7 +198,7 @@ const CreateSales = () => {
       } else {
         toast({
           title: "Error",
-          description: data?.msg || 'Barcode not found in received orders',
+          description: data?.msg || "Barcode not found in received orders",
           variant: "destructive",
         });
       }
@@ -214,21 +214,24 @@ const CreateSales = () => {
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       addBarcode();
     }
   };
 
-  const removeBarcode = useCallback((index) => {
-    const newBarcodes = [...barcodes];
-    newBarcodes.splice(index, 1);
-    setBarcodes(newBarcodes);
-  }, [barcodes]);
+  const removeBarcode = useCallback(
+    (index) => {
+      const newBarcodes = [...barcodes];
+      newBarcodes.splice(index, 1);
+      setBarcodes(newBarcodes);
+    },
+    [barcodes],
+  );
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    
+
     const data = {
       ...workorder,
       work_order_sa_year: dateyear,
@@ -245,7 +248,7 @@ const CreateSales = () => {
           description: (
             <div className="grid gap-1">
               {validation.error.errors.map((error, i) => {
-                const field = error.path[0].replace(/_/g, ' ');
+                const field = error.path[0].replace(/_/g, " ");
                 const label = field.charAt(0).toUpperCase() + field.slice(1);
                 return (
                   <div key={i} className="flex items-start gap-2">
@@ -253,7 +256,8 @@ const CreateSales = () => {
                       {i + 1}
                     </div>
                     <p className="text-xs">
-                      <span className="font-medium">{label}:</span> {error.message}
+                      <span className="font-medium">{label}:</span>{" "}
+                      {error.message}
                     </p>
                   </div>
                 );
@@ -319,27 +323,33 @@ const CreateSales = () => {
                   <Label htmlFor="retailer">
                     Retailer <span className="text-red-500">*</span>
                   </Label>
+
                   <Select
                     name="work_order_sa_retailer_id"
-                    value={workorder.work_order_sa_retailer_id}
-                    onValueChange={(value) => {
+                    isSearchable={true}
+                    options={retailerData?.customer?.map((retailer) => ({
+                      value: retailer.id,
+                      label: retailer.customer_name,
+                    }))}
+                    value={
+                      retailerData?.customer
+                        ?.map((retailer) => ({
+                          value: retailer.id,
+                          label: retailer.customer_name,
+                        }))
+                        .find(
+                          (opt) =>
+                            opt.value === workorder.work_order_sa_retailer_id,
+                        ) || null
+                    }
+                    onChange={(selectedOption) => {
                       setWorkorder({
                         ...workorder,
-                        work_order_sa_retailer_id: value,
+                        work_order_sa_retailer_id: selectedOption?.value || "",
                       });
                     }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select retailer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {retailerData?.customer?.map((retailer) => (
-                        <SelectItem key={retailer.id} value={retailer.id.toString()}>
-                          {retailer.customer_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Search and select retailer..."
+                  />
                 </div>
 
                 {/* Sales Date */}
@@ -426,23 +436,31 @@ const CreateSales = () => {
               {/* Barcode entries */}
               <div className="space-y-1">
                 <Label className="text-sm font-medium">
-                  T Code Entries (Total: {barcodes.length} / {workorder.work_order_sa_pcs || 0})
+                  T Code Entries (Total: {barcodes.length} /{" "}
+                  {workorder.work_order_sa_pcs || 0})
                 </Label>
-                
+
                 <div className="flex items-center gap-2 mb-2">
                   <Input
                     ref={inputRef}
                     value={currentInputValue}
                     onChange={(e) => {
-                      const value = e.target.value.toUpperCase().replace(/\s/g, '');
+                      const value = e.target.value
+                        .toUpperCase()
+                        .replace(/\s/g, "");
                       handleBarcodeInputChange({ target: { value } });
                     }}
                     onKeyPress={handleKeyPress}
                     onPaste={(e) => {
-                      const pastedText = e.clipboardData.getData('text').toUpperCase().replace(/\s/g, '');
+                      const pastedText = e.clipboardData
+                        .getData("text")
+                        .toUpperCase()
+                        .replace(/\s/g, "");
                       e.preventDefault();
-                      document.execCommand('insertText', false, pastedText);
-                      handleBarcodeInputChange({ target: { value: pastedText } });
+                      document.execCommand("insertText", false, pastedText);
+                      handleBarcodeInputChange({
+                        target: { value: pastedText },
+                      });
                     }}
                     placeholder="Enter 6-digit barcode"
                     className="h-8 text-xs p-1 uppercase"
@@ -469,58 +487,74 @@ const CreateSales = () => {
                 <div className="border rounded p-2 bg-gray-50">
                   {barcodes.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1">
-                    {barcodes.reduce((uniqueBarcodes, barcode, index) => {
-                      // Only show the first occurrence of each barcode
-                      const firstIndex = barcodes.findIndex(b => b === barcode);
-                      if (firstIndex === index) {
-                        const count = barcodes.filter(b => b === barcode).length;
-                        const isDuplicate = count > 1;
-                        
-                        uniqueBarcodes.push(
-                          <div
-                            key={`${index}-${barcode}`}
-                            className={`bg-white p-1 rounded border border-gray-200 text-xs flex items-center justify-between ${
-                              isDuplicate ? 'bg-amber-100 border-amber-300' : ''
-                            }`}
-                          >
-                            <div className="flex items-center min-w-0 flex-1">
-                              <span className="text-gray-500 mr-1 w-4 text-right shrink-0">
-                                {index + 1}.
-                              </span>
-                              <span className="font-mono truncate" title={barcode}>
-                                {barcode}
-                              </span>
-                            </div>
-                  
-                            <div className="flex items-center gap-0.5">
-                              {isDuplicate && (
-                                <span className="text-xs text-amber-600">{count}</span>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                type="button"
-                                onClick={() => removeBarcode(index)}
-                                className="h-5 w-5 hover:bg-red-100 text-red-500 shrink-0 p-0.5"
-                              >
-                                <Minus className="h-2.5 w-2.5" />
-                              </Button>
-                            </div>
-                          </div>
+                      {barcodes.reduce((uniqueBarcodes, barcode, index) => {
+                        // Only show the first occurrence of each barcode
+                        const firstIndex = barcodes.findIndex(
+                          (b) => b === barcode,
                         );
-                      }
-                      return uniqueBarcodes;
-                    }, [])}
-                  </div>
+                        if (firstIndex === index) {
+                          const count = barcodes.filter(
+                            (b) => b === barcode,
+                          ).length;
+                          const isDuplicate = count > 1;
+
+                          uniqueBarcodes.push(
+                            <div
+                              key={`${index}-${barcode}`}
+                              className={`bg-white p-1 rounded border border-gray-200 text-xs flex items-center justify-between ${
+                                isDuplicate
+                                  ? "bg-amber-100 border-amber-300"
+                                  : ""
+                              }`}
+                            >
+                              <div className="flex items-center min-w-0 flex-1">
+                                <span className="text-gray-500 mr-1 w-4 text-right shrink-0">
+                                  {index + 1}.
+                                </span>
+                                <span
+                                  className="font-mono truncate"
+                                  title={barcode}
+                                >
+                                  {barcode}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-0.5">
+                                {isDuplicate && (
+                                  <span className="text-xs text-amber-600">
+                                    {count}
+                                  </span>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  type="button"
+                                  onClick={() => removeBarcode(index)}
+                                  className="h-5 w-5 hover:bg-red-100 text-red-500 shrink-0 p-0.5"
+                                >
+                                  <Minus className="h-2.5 w-2.5" />
+                                </Button>
+                              </div>
+                            </div>,
+                          );
+                        }
+                        return uniqueBarcodes;
+                      }, [])}
+                    </div>
                   ) : (
-                    <p className="text-xs text-gray-500 italic">No barcodes added yet</p>
+                    <p className="text-xs text-gray-500 italic">
+                      No barcodes added yet
+                    </p>
                   )}
-                  
+
                   {Object.keys(duplicateBarcodes).length > 0 && (
                     <div className="mt-2 text-amber-600 text-xs">
-                      Duplicate barcodes detected: {Object.entries(duplicateBarcodes)
-                        .map(([barcode, count]) => `${barcode} (${count} times)`)
-                        .join(', ')}
+                      Duplicate barcodes detected:{" "}
+                      {Object.entries(duplicateBarcodes)
+                        .map(
+                          ([barcode, count]) => `${barcode} (${count} times)`,
+                        )
+                        .join(", ")}
                     </div>
                   )}
                 </div>
@@ -530,9 +564,9 @@ const CreateSales = () => {
                 <Button variant="outline" asChild>
                   <Link to="/sales">Cancel</Link>
                 </Button>
-                <Button 
+                <Button
                   type="button"
-                  onClick={onSubmit} 
+                  onClick={onSubmit}
                   disabled={submitMutation.isPending}
                 >
                   {submitMutation.isPending ? "Submitting..." : "Submit"}

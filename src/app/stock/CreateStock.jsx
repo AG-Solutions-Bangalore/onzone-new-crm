@@ -51,7 +51,58 @@ import { useMutation } from "@tanstack/react-query";
 import { ButtonConfig } from "@/config/ButtonConfig";
 import { useFetchBrand } from "@/hooks/useApi";
 import { LoaderComponent } from "@/components/LoaderComponent/LoaderComponent";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import ReactSelect from "react-select";
+
+// Custom styles to match the Shadcn/UI inputs and design guidelines
+const customSelectStyles = {
+  control: (provided, state) => ({
+    ...provided,
+    backgroundColor: "white",
+    borderColor: state.isFocused ? "rgb(59, 130, 246)" : "rgb(226, 232, 240)", // blue-500 focus / slate-200 default
+    boxShadow: state.isFocused ? "0 0 0 1px rgb(59, 130, 246)" : "none",
+    "&:hover": {
+      borderColor: state.isFocused ? "rgb(59, 130, 246)" : "rgb(203, 213, 225)",
+    },
+    borderRadius: "0.375rem", // rounded-md
+    minHeight: "36px", // h-9
+    height: "36px",
+    fontSize: "0.875rem",
+  }),
+  valueContainer: (provided) => ({
+    ...provided,
+    height: "36px",
+    padding: "0 8px",
+  }),
+  input: (provided) => ({
+    ...provided,
+    margin: "0px",
+  }),
+  indicatorsContainer: (provided) => ({
+    ...provided,
+    height: "36px",
+  }),
+  option: (provided, state) => ({
+    ...provided,
+    fontSize: "0.875rem",
+    backgroundColor: state.isSelected
+      ? "rgb(59, 130, 246)" // blue-500
+      : state.isFocused
+        ? "rgb(239, 246, 255)" // blue-50
+        : "white",
+    color: state.isSelected ? "white" : "rgb(31, 41, 55)", // gray-800
+    cursor: "pointer",
+    "&:active": {
+      backgroundColor: "rgb(219, 234, 254)",
+    },
+  }),
+  menu: (provided) => ({
+    ...provided,
+    borderRadius: "0.375rem",
+    boxShadow:
+      "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)", // shadow-md
+    zIndex: 50,
+  }),
+};
 
 const formSchema = z.object({
   stock_brand: z.string().min(1, "Brand is required"),
@@ -89,7 +140,18 @@ const CreateStock = () => {
     },
   });
 
-  const { data: brandData, isFetching: isBrandLoading, refetch: refetchBrands } = useFetchBrand();
+  const {
+    data: brandData,
+    isFetching: isBrandLoading,
+    refetch: refetchBrands,
+  } = useFetchBrand();
+
+  // Map brands data to the react-select options format
+  const brandOptions =
+    brandData?.brand?.map((brand) => ({
+      value: String(brand.fabric_brand_brands),
+      label: String(brand.fabric_brand_brands),
+    })) || [];
 
   const handleBarcodeScan = (e) => {
     if (e.key === "Enter") {
@@ -168,7 +230,7 @@ const CreateStock = () => {
     onSuccess: (data) => {
       toast({
         title: "Success",
-        description: data.msg || 'Stock created successfully',
+        description: data.msg || "Stock created successfully",
         variant: "default",
       });
       form.reset({
@@ -257,7 +319,7 @@ const CreateStock = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => navigate('/stock')}
+                  onClick={() => navigate("/stock")}
                   className="h-6 w-6 p-0 mr-1"
                 >
                   <ArrowLeft className="h-3 w-3" />
@@ -339,9 +401,7 @@ const CreateStock = () => {
           </div>
           <div className="mb-1">
             <div className="flex justify-between items-center mb-2 px-2">
-              <h3 className="text-sm font-medium text-blue-800">
-                Barcodes
-              </h3>
+              <h3 className="text-sm font-medium text-blue-800">Barcodes</h3>
               {barcodes.length > 0 && (
                 <Button
                   variant="outline"
@@ -363,31 +423,34 @@ const CreateStock = () => {
                   <div
                     key={barcode}
                     className={`relative bg-white p-1 rounded-lg border border-gray-200 shadow-sm transition-colors duration-200 ${
-                      highlightedItem === barcode ? "bg-blue-50 border-2 border-blue-500" : ""
+                      highlightedItem === barcode
+                        ? "bg-blue-50 border-2 border-blue-500"
+                        : ""
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center min-w-0 flex-1">
-                       
-                        <span className="text-xs font-mono truncate " title={barcode}>
+                        <span
+                          className="text-xs font-mono truncate "
+                          title={barcode}
+                        >
                           {barcode}
                         </span>
                       </div>
                       {count > 1 ? (
                         <div className="flex items-center">
-                         <span className="text-xs text-gray-400 w-4 text-right shrink-0">
-                          {count}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeBarcode(barcode)}
-                          className="h-5 w-5 hover:bg-red-100 text-red-500 shrink-0 p-0.5"
-                        >
-                          <Minus className="h-2.5 w-2.5" />
-                        </Button>
+                          <span className="text-xs text-gray-400 w-4 text-right shrink-0">
+                            {count}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeBarcode(barcode)}
+                            className="h-5 w-5 hover:bg-red-100 text-red-500 shrink-0 p-0.5"
+                          >
+                            <Minus className="h-2.5 w-2.5" />
+                          </Button>
                         </div>
-                     
                       ) : (
                         <Button
                           variant="ghost"
@@ -420,7 +483,7 @@ const CreateStock = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate('/stock')}
+              onClick={() => navigate("/stock")}
               className="border-gray-300 hover:bg-gray-100 text-xs h-9"
             >
               Back
@@ -471,28 +534,29 @@ const CreateStock = () => {
                 <div className="space-y-4 flex-grow">
                   <form className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="stock_brand">Brand <span className="text-red-700">*</span></Label>
-                      <Select
-                        onValueChange={(value) =>
-                          form.setValue("stock_brand", value, { shouldValidate: true })
+                      <Label htmlFor="stock_brand">
+                        Brand <span className="text-red-700">*</span>
+                      </Label>
+                      <ReactSelect
+                        id="stock_brand"
+                        options={brandOptions}
+                        value={
+                          brandOptions.find(
+                            (option) =>
+                              option.value === form.watch("stock_brand"),
+                          ) || null
                         }
-                        defaultValue={form.getValues("stock_brand")}
-                        value={form.getValues("stock_brand")}
-                      >
-                        <SelectTrigger className="bg-white">
-                          <SelectValue placeholder="Select brand" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {brandData?.brand?.map((brand) => (
-                            <SelectItem
-                              key={brand.fabric_brand_brands}
-                              value={String(brand.fabric_brand_brands)}
-                            >
-                              {brand.fabric_brand_brands}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        onChange={(option) =>
+                          form.setValue(
+                            "stock_brand",
+                            option ? option.value : "",
+                            { shouldValidate: true },
+                          )
+                        }
+                        placeholder="Select brand"
+                        isSearchable
+                        styles={customSelectStyles}
+                      />
                       {form.formState.errors.stock_brand && (
                         <p className="text-sm text-destructive">
                           {form.formState.errors.stock_brand.message}
@@ -528,7 +592,10 @@ const CreateStock = () => {
                     <div className="flex justify-between items-center mb-1">
                       <h3 className="text-xs font-medium">Barcode Scanner</h3>
                       <div className="flex items-center gap-1">
-                        <Badge variant={scanningActive ? "default" : "secondary"} className="text-xs h-5">
+                        <Badge
+                          variant={scanningActive ? "default" : "secondary"}
+                          className="text-xs h-5"
+                        >
                           {scanningActive ? (
                             <div className="flex items-center">
                               <div className="animate-pulse bg-white rounded-full h-1.5 w-1.5 mr-1"></div>
@@ -553,7 +620,9 @@ const CreateStock = () => {
                       </div>
                     </div>
                     <div className="bg-red-100/50 p-2 rounded-md">
-                      <Label className="text-xs font-medium">Barcode Scanner</Label>
+                      <Label className="text-xs font-medium">
+                        Barcode Scanner
+                      </Label>
                       <div className="flex gap-1 mt-1">
                         <Input
                           ref={barcodeInputRef}
@@ -589,18 +658,26 @@ const CreateStock = () => {
                   <CardContent className="py-2 px-3">
                     <div className="space-y-1">
                       <div className="flex justify-between">
-                        <span className="text-xs text-muted-foreground">Total Barcodes</span>
-                        <span className="text-xs font-medium">{totalBarcodes}</span>
+                        <span className="text-xs text-muted-foreground">
+                          Total Barcodes
+                        </span>
+                        <span className="text-xs font-medium">
+                          {totalBarcodes}
+                        </span>
                       </div>
                     </div>
                   </CardContent>
                   <CardFooter className="py-2 px-3">
                     <Button
                       onClick={handleSubmitStock}
-                      disabled={barcodes.length === 0 || submitStockMutation.isPending}
+                      disabled={
+                        barcodes.length === 0 || submitStockMutation.isPending
+                      }
                       className={`w-full h-7 text-xs ${ButtonConfig.backgroundColor} ${ButtonConfig.hoverBackgroundColor} ${ButtonConfig.textColor} disabled:bg-gray-400`}
                     >
-                      {submitStockMutation.isPending ? "Submitting..." : "Submit Stock"}
+                      {submitStockMutation.isPending
+                        ? "Submitting..."
+                        : "Submit Stock"}
                     </Button>
                   </CardFooter>
                 </Card>
@@ -630,29 +707,33 @@ const CreateStock = () => {
                         <div
                           key={barcode}
                           className={`bg-white p-2 rounded-md border border-gray-200 transition-colors duration-200 flex items-center justify-between ${
-                            highlightedItem === barcode ? 'bg-blue-100 border-2 border-blue-600' : ''
+                            highlightedItem === barcode
+                              ? "bg-blue-100 border-2 border-blue-600"
+                              : ""
                           }`}
                         >
                           <div className="  flex items-center min-w-0 flex-1">
-                           
-                            <span className="text-sm  font-mono truncate" title={barcode}>
+                            <span
+                              className="text-sm  font-mono truncate"
+                              title={barcode}
+                            >
                               {barcode}
                             </span>
                           </div>
                           {count > 1 ? (
                             <div className="flex items-center">
-                             <span className="   text-sm text-gray-500  w-5 text-right shrink-0">
-                              {count}
-                            </span>
-                           
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeBarcode(barcode)}
-                              className="h-5 w-5  hover:bg-red-100 text-red-500  shrink-0"
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
+                              <span className="   text-sm text-gray-500  w-5 text-right shrink-0">
+                                {count}
+                              </span>
+
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeBarcode(barcode)}
+                                className="h-5 w-5  hover:bg-red-100 text-red-500  shrink-0"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
                             </div>
                           ) : (
                             <Button
@@ -673,7 +754,9 @@ const CreateStock = () => {
                     <div className="bg-gray-100 p-2 rounded-full mb-2">
                       <Scan className="h-4 w-4 text-gray-500" />
                     </div>
-                    <p className="text-xs text-gray-500 mb-2 text-center">No barcodes added yet</p>
+                    <p className="text-xs text-gray-500 mb-2 text-center">
+                      No barcodes added yet
+                    </p>
                     <p className="text-xs text-gray-400 text-center">
                       Scan or type barcodes to add them to your stock
                     </p>
@@ -728,12 +811,12 @@ const CreateStock = () => {
                 }}
                 styles={{
                   container: {
-                    borderRadius: '8px',
-                    overflow: 'hidden'
+                    borderRadius: "8px",
+                    overflow: "hidden",
                   },
                   video: {
-                    objectFit: 'cover'
-                  }
+                    objectFit: "cover",
+                  },
                 }}
               />
             </div>
@@ -761,27 +844,26 @@ const CreateStock = () => {
               </div>
               <form className="space-y-4 pb-4">
                 <div className="space-y-2">
-                  <Label htmlFor="mobile_stock_brand">Brand <span className="text-red-700">*</span></Label>
-                  <Select
-                    onValueChange={(value) =>
-                      form.setValue("stock_brand", value, { shouldValidate: true })
+                  <Label htmlFor="mobile_stock_brand">
+                    Brand <span className="text-red-700">*</span>
+                  </Label>
+                  <ReactSelect
+                    id="mobile_stock_brand"
+                    options={brandOptions}
+                    value={
+                      brandOptions.find(
+                        (option) => option.value === form.watch("stock_brand"),
+                      ) || null
                     }
-                    defaultValue={form.getValues("stock_brand")}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select brand" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {brandData?.brand?.map((brand) => (
-                        <SelectItem
-                          key={brand.fabric_brand_brands}
-                          value={String(brand.fabric_brand_brands)}
-                        >
-                          {brand.fabric_brand_brands}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(option) =>
+                      form.setValue("stock_brand", option ? option.value : "", {
+                        shouldValidate: true,
+                      })
+                    }
+                    placeholder="Select brand"
+                    isSearchable
+                    styles={customSelectStyles}
+                  />
                   {form.formState.errors.stock_brand && (
                     <p className="text-sm text-destructive">
                       {form.formState.errors.stock_brand.message}
@@ -815,12 +897,21 @@ const CreateStock = () => {
             <DrawerFooter className="pt-2">
               <Button
                 onClick={handleFinalSubmit}
-                disabled={!form.formState.isValid || barcodes.length === 0 || submitStockMutation.isPending}
+                disabled={
+                  !form.formState.isValid ||
+                  barcodes.length === 0 ||
+                  submitStockMutation.isPending
+                }
                 className={`${ButtonConfig.backgroundColor} ${ButtonConfig.hoverBackgroundColor} ${ButtonConfig.textColor}`}
               >
-                {submitStockMutation.isPending ? "Submitting..." : "Submit Stock"}
+                {submitStockMutation.isPending
+                  ? "Submitting..."
+                  : "Submit Stock"}
               </Button>
-              <Button variant="outline" onClick={() => setShowFormDrawer(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowFormDrawer(false)}
+              >
                 Cancel
               </Button>
             </DrawerFooter>
