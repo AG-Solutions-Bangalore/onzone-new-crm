@@ -38,6 +38,7 @@ const formSchema = z.object({
   work_order_width: z.string().min(1, "Width is required"),
   work_order_count: z.number(),
   work_order_remarks: z.string().optional(),
+  work_order_38_39: z.string().optional(),
   workorder_sub_data: z.array(
     z.object({
       work_order_sub_selection_id: z.string().min(1, "T Code is required"),
@@ -114,6 +115,7 @@ const EditWorkOrder = () => {
     work_order_ratio_h: "",
     work_order_ratio_h_consumption: "",
     work_order_no: "",
+    work_order_38_39: "No",
   });
 
   const [work_order_count, setCount] = useState(0);
@@ -162,6 +164,7 @@ const EditWorkOrder = () => {
         work_order_ratio_h_consumption:
           wo?.work_order_ratio_h_consumption || "",
         work_order_no: wo?.work_order_no || "",
+        work_order_38_39: wo?.work_order_38_39 || "No",
       });
 
       setRatioValue(wo?.work_order_ratio_h || "");
@@ -429,6 +432,7 @@ const EditWorkOrder = () => {
       work_order_ratio_h: workorder.work_order_ratio_h,
       work_order_ratio_h_consumption: workorder.work_order_ratio_h_consumption,
       removed_rows: removedRows,
+      work_order_38_39: workorder.work_order_38_39,
     };
 
     const validation = formSchema.safeParse(data);
@@ -710,6 +714,27 @@ const EditWorkOrder = () => {
                 />
               </div>
 
+              {/* Is Order 38/39 Checkbox */}
+              <div className="flex items-center space-x-2 pt-6">
+                <input
+                  type="checkbox"
+                  id="work_order_38_39"
+                  name="work_order_38_39"
+                  checked={workorder.work_order_38_39 === "Yes"}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setWorkOrder((prev) => ({
+                      ...prev,
+                      work_order_38_39: checked ? "Yes" : "No",
+                    }));
+                  }}
+                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                />
+                <Label htmlFor="work_order_38_39" className="text-sm font-medium leading-none cursor-pointer">
+                  Is this order 38/39?
+                </Label>
+              </div>
+
               {/* Remarks */}
               <div className="col-span-full space-y-2">
                 <Label htmlFor="work_order_remarks">Remarks</Label>
@@ -760,7 +785,7 @@ const EditWorkOrder = () => {
                             H-38
                           </th>
                           <th className="px-1 py-1 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                            H-40
+                            {workorder.work_order_38_39 === "Yes" ? "H-39" : "H-40"}
                           </th>
                           <th className="px-1 py-1 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                             H-42
