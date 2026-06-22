@@ -2286,8 +2286,13 @@ const WorkOrderReceipt = () => {
                                     textAlign: "center",
                                   }}
                                 >
-                                  <span className="font-bold text-sm" style={tablecss}>
-                                    {pageTotals.length ? pageTotals.length.toFixed(1) : ""}
+                                  <span
+                                    className="font-bold text-sm"
+                                    style={tablecss}
+                                  >
+                                    {pageTotals.length
+                                      ? pageTotals.length.toFixed(1)
+                                      : ""}
                                   </span>
                                 </td>
                                 <td
@@ -2517,7 +2522,7 @@ const WorkOrderReceipt = () => {
                                         }}
                                       >
                                         <span
-                                          className="font-bold text-sm text-red-600"
+                                          className="font-bold text-sm"
                                           style={tablecss}
                                         >
                                           Grand Total
@@ -2529,8 +2534,15 @@ const WorkOrderReceipt = () => {
                                           textAlign: "center",
                                         }}
                                       >
-                                        <span className="font-bold text-sm" style={tablecss}>
-                                          {wsub.work_order_sub_length ? wsub.work_order_sub_length.toFixed(1) : ""}
+                                        <span
+                                          className="font-bold text-sm"
+                                          style={tablecss}
+                                        >
+                                          {wsub.work_order_sub_length
+                                            ? wsub.work_order_sub_length.toFixed(
+                                                1,
+                                              )
+                                            : ""}
                                         </span>
                                       </td>
                                       <td
