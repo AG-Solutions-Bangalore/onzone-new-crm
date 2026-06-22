@@ -283,7 +283,7 @@ const WorkOrderReceipt = () => {
               ></div>
               <div className="print-compact" ref={componentRef}>
                 <div className="mx-4 text-base">
-                  <div className="print-header">
+                  {/* <div className="print-header">
                     <table
                       className="w-full"
                       style={{ marginBottom: "0.2rem" }}
@@ -343,7 +343,7 @@ const WorkOrderReceipt = () => {
                         </tr>
                       </tbody>
                     </table>
-                  </div>
+                  </div> */}
                   <hr className="my-4  border border-gray-400" />
 
                   {/* SCREEN ONLY VIEW (original layout, unmodified) */}
@@ -1289,6 +1289,67 @@ const WorkOrderReceipt = () => {
                             marginTop: "0",
                           }}
                         >
+                          <div className="print-header">
+                            <table
+                              className="w-full"
+                              style={{ marginBottom: "0.2rem" }}
+                            >
+                              <tbody>
+                                <tr>
+                                  <td className=" text-sm">
+                                    Work O.No&nbsp;:&nbsp;
+                                    <span className="font-bold">
+                                      {workorder.work_order_no}
+                                    </span>
+                                  </td>
+                                  <td className=" text-sm">
+                                    Factory&nbsp;:&nbsp;
+                                    <span className="font-bold">
+                                      {workorder.work_order_factory}
+                                    </span>
+                                  </td>
+
+                                  <td className="text-sm">
+                                    Brands&nbsp;:&nbsp;
+                                    <span className="font-bold">
+                                      {workorder.work_order_brand == "Other"
+                                        ? workorder.work_order_brand_other
+                                        : workorder.work_order_brand}
+                                    </span>
+                                  </td>
+                                  <td className="text-sm">
+                                    Ratio&nbsp;:&nbsp;
+                                    <span className="font-bold">
+                                      {workorder.work_order_ratio}
+                                    </span>
+                                  </td>
+
+                                  <td className="text-sm">
+                                    Width&nbsp;:&nbsp;
+                                    <span className="font-bold">
+                                      {workorder.work_order_width}
+                                    </span>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td className="text-sm">
+                                    Work Date&nbsp;:&nbsp;
+                                    <span className="font-bold">
+                                      {Moment(workorder.work_order_date).format(
+                                        "DD-MM-YYYY",
+                                      )}
+                                    </span>
+                                  </td>
+                                  <td className="text-sm">
+                                    Remarks&nbsp;:&nbsp;
+                                    <span className="font-bold">
+                                      {workorder.work_order_remarks}
+                                    </span>
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
                           <table
                             style={{ width: "100%", border: "1px solid #000" }}
                           >
