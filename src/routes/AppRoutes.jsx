@@ -12,8 +12,7 @@ import EditOrderForm from "@/app/order-form/EditOrderForm";
 import PublicCreateOrderForm from "@/app/order-form/PublicCreateOrderForm";
 import CreateStock from "@/app/stock/CreateStock";
 import FactoryOrderReceived from "@/app/orderReceived/FactoryOrderReceived";
-
-
+import StickerPrinting from "@/app/Sticker/StickerPrinting";
 
 // import Home from "@/app/home/Home";
 // import BrandList from "@/app/master/brand/BrandList";
@@ -52,7 +51,6 @@ import FactoryOrderReceived from "@/app/orderReceived/FactoryOrderReceived";
 // import SalesReport from "@/app/report/sales/SalesReport";
 // import NotFound from "@/app/errors/NotFound";
 
-
 const Home = lazy(() => import("@/app/home/Home"));
 const BrandList = lazy(() => import("@/app/master/brand/BrandList"));
 const EditBrand = lazy(() => import("@/app/master/brand/EditBrand"));
@@ -66,50 +64,50 @@ const AddRetailer = lazy(() => import("@/app/master/retailer/AddRetailer"));
 const EditRetailer = lazy(() => import("@/app/master/retailer/EditRetailer"));
 const RatioList = lazy(() => import("@/app/master/ratio/RatioList"));
 const ViewRatio = lazy(() => import("@/app/master/ratio/ViewRatio"));
-const HalfRatioList = lazy(() =>
-  import("@/app/master/halfRatio/HalfRatioList")
+const HalfRatioList = lazy(
+  () => import("@/app/master/halfRatio/HalfRatioList"),
 );
 const AddHalfRatio = lazy(() => import("@/app/master/halfRatio/AddHalfRatio"));
-const EditHalfRatio = lazy(() =>
-  import("@/app/master/halfRatio/EditHalfRatio")
+const EditHalfRatio = lazy(
+  () => import("@/app/master/halfRatio/EditHalfRatio"),
 );
 const WorkOrderList = lazy(() => import("@/app/workOrder/WorkOrderList"));
 const CreateWorkOrder = lazy(() => import("@/app/workOrder/CreateWorkOrder"));
 const EditWorkOrder = lazy(() => import("@/app/workOrder/EditWorkOrder"));
 const WorkOrderReceipt = lazy(() => import("@/app/workOrder/WorkOrderReceipt"));
-const WorkOrderMaterial = lazy(() =>
-  import("@/app/workOrder/WorkOrderMaterial")
+const WorkOrderMaterial = lazy(
+  () => import("@/app/workOrder/WorkOrderMaterial"),
 );
-const OrderReceivedList = lazy(() =>
-  import("@/app/orderReceived/OrderReceivedList")
+const OrderReceivedList = lazy(
+  () => import("@/app/orderReceived/OrderReceivedList"),
 );
-const AddOrderReceived = lazy(() =>
-  import("@/app/orderReceived/AddOrderReceived")
+const AddOrderReceived = lazy(
+  () => import("@/app/orderReceived/AddOrderReceived"),
 );
-const EditOrderReceived = lazy(() =>
-  import("@/app/orderReceived/EditOrderReceived")
+const EditOrderReceived = lazy(
+  () => import("@/app/orderReceived/EditOrderReceived"),
 );
-const ViewOrderReceived = lazy(() =>
-  import("@/app/orderReceived/ViewOrderReceived")
+const ViewOrderReceived = lazy(
+  () => import("@/app/orderReceived/ViewOrderReceived"),
 );
-const DcReceiptReceived = lazy(() =>
-  import("@/app/orderReceived/DcReceiptReceived")
+const DcReceiptReceived = lazy(
+  () => import("@/app/orderReceived/DcReceiptReceived"),
 );
 const SalesList = lazy(() => import("@/app/sales/SalesList"));
 const CreateSales = lazy(() => import("@/app/sales/CreateSales"));
 const ViewSales = lazy(() => import("@/app/sales/ViewSales"));
 const EditSales = lazy(() => import("@/app/sales/EditSales"));
-const FinishedStockList = lazy(() =>
-  import("@/app/finishedStock/FinishedStockList")
+const FinishedStockList = lazy(
+  () => import("@/app/finishedStock/FinishedStockList"),
 );
-const RetailerReport = lazy(() =>
-  import("@/app/report/retailer/RetailerReport")
+const RetailerReport = lazy(
+  () => import("@/app/report/retailer/RetailerReport"),
 );
-const WorkOrderReport = lazy(() =>
-  import("@/app/report/workOrder/WorkOrderReport")
+const WorkOrderReport = lazy(
+  () => import("@/app/report/workOrder/WorkOrderReport"),
 );
-const ReceivedReport = lazy(() =>
-  import("@/app/report/received/ReceivedReport")
+const ReceivedReport = lazy(
+  () => import("@/app/report/received/ReceivedReport"),
 );
 const SalesReport = lazy(() => import("@/app/report/sales/SalesReport"));
 const NotFound = lazy(() => import("@/app/errors/NotFound"));
@@ -120,14 +118,13 @@ function AppRoutes() {
       <Route path="/" element={<AuthRoute />}>
         <Route path="/" element={<Login />} />
 
-
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/create-order" element={<PublicCreateOrderForm />} />
       </Route>
 
       <Route path="/" element={<ProtectedRoute />}>
         {/* Dashboard  */}
-   
+
         <Route path="/home" element={<Home />} />
         {/* Master  */}
         <Route path="/master/brand" element={<BrandList />} />
@@ -139,6 +136,8 @@ function AppRoutes() {
           path="/master/factory/edit-factory/:id"
           element={<EditFactory />}
         />
+        {/*Dashboard */}
+        <Route path="/sticker-printing" element={<StickerPrinting />} />
 
         <Route path="/master/style" element={<StyleList />} />
         <Route path="/master/width" element={<WidthList />} />
@@ -209,16 +208,24 @@ function AppRoutes() {
         <Route path="/sales/add-sales" element={<CreateSales />} />
         <Route path="/sales/view-sales/:id" element={<ViewSales />} />
         <Route path="/sales/edit-sales/:id" element={<EditSales />} />
-      
 
         {/* order form  */}
         <Route path="/order-form" element={<OrderFormList />} />
-        <Route path="/order-form/create-order-form" element={<CreateOrderForm />} />
-        <Route path="/order-form/view-order-form/:id" element={<OrderFormView />} />
-        <Route path="/order-form/view-edit-form/:id" element={<EditOrderForm />} />
+        <Route
+          path="/order-form/create-order-form"
+          element={<CreateOrderForm />}
+        />
+        <Route
+          path="/order-form/view-order-form/:id"
+          element={<OrderFormView />}
+        />
+        <Route
+          path="/order-form/view-edit-form/:id"
+          element={<EditOrderForm />}
+        />
 
-           {/* stock  */}
-           <Route path="/create-stock" element={<CreateStock />} />
+        {/* stock  */}
+        <Route path="/create-stock" element={<CreateStock />} />
         {/* finished stock  */}
         <Route path="/finished-stock" element={<FinishedStockList />} />
 

@@ -103,6 +103,12 @@ export function AppSidebar({ ...props }) {
         isActive: false,
       },
       {
+        title: "Sticker Printing",
+        url: "/sticker-printing",
+        icon: Blocks,
+        // isActive: false,
+      },
+      {
         title: "Stock",
         url: "/create-stock",
         icon: Blocks,
