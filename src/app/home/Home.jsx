@@ -86,7 +86,7 @@ const Home = () => {
             title="Pending Sticker Print"
             value={pendingStickers}
             icon={Printer}
-            route="/sticker-print"
+            route="/sticker-printing"
           />
           <MetricCard
             title="Pending Work Orders"

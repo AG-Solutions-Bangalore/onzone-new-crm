@@ -717,11 +717,14 @@ const CreateWorkOrder = () => {
                           <th className="px-1 py-1 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                             C
                           </th>
-                          <th className="px-1 py-1 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                            H-38
+                           <th className="px-1 py-1 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                            {workorder.work_order_38_39 === "Yes" ? "H-38" : "H-36"}
                           </th>
                           <th className="px-1 py-1 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                            {workorder.work_order_38_39 === "Yes" ? "H-39" : "H-40"}
+                            {workorder.work_order_38_39 === "Yes" ? "H-39" : "H-38"}
+                          </th>
+                          <th className="px-1 py-1 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
+                            H-40
                           </th>
                           <th className="px-1 py-1 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                             H-42
@@ -873,7 +876,7 @@ const CreateWorkOrder = () => {
                             </td>
 
                             {/* Half sizes */}
-                            {["38", "40", "42", "44", "46", "48", "50"].map(
+                            {["36","38", "40", "42", "44", "46", "48", "50"].map(
                               (size) => (
                                 <td
                                   key={size}

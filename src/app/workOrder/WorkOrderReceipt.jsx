@@ -381,13 +381,17 @@ const WorkOrderReceipt = () => {
                           >
                             Cons
                           </th>
-                          <th style={{ border: "1px solid #000" }}>36</th>
-                          <th style={{ border: "1px solid #000" }}>38</th>
+                          <th style={{ border: "1px solid #000" }}>
+                            {workorder?.work_order_38_39 === "Yes"
+                              ? "38"
+                              : "36"}
+                          </th>
                           <th style={{ border: "1px solid #000" }}>
                             {workorder?.work_order_38_39 === "Yes"
                               ? "39"
-                              : "40"}
+                              : "38"}
                           </th>
+                          <th style={{ border: "1px solid #000" }}>40</th>
                           <th style={{ border: "1px solid #000" }}>42</th>
                           <th style={{ border: "1px solid #000" }}>44</th>
                           <th style={{ border: "1px solid #000" }}>46</th>
@@ -1385,13 +1389,17 @@ const WorkOrderReceipt = () => {
                                 >
                                   Cons
                                 </th>
-                                <th style={{ border: "1px solid #000" }}>36</th>
-                                <th style={{ border: "1px solid #000" }}>38</th>
+                                <th style={{ border: "1px solid #000" }}>
+                                  {workorder?.work_order_38_39 === "Yes"
+                                    ? "38"
+                                    : "36"}
+                                </th>
                                 <th style={{ border: "1px solid #000" }}>
                                   {workorder?.work_order_38_39 === "Yes"
                                     ? "39"
-                                    : "40"}
+                                    : "38"}
                                 </th>
+                                <th style={{ border: "1px solid #000" }}>40</th>
                                 <th style={{ border: "1px solid #000" }}>42</th>
                                 <th style={{ border: "1px solid #000" }}>44</th>
                                 <th style={{ border: "1px solid #000" }}>46</th>
