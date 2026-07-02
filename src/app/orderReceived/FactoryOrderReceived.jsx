@@ -9,25 +9,16 @@ import {
   Plus,
   Minus,
   Loader2,
-  ChevronsUpDown,
+  Camera,
+  ArrowRight,
+  ArrowLeft,
 } from "lucide-react";
-
-import { Check } from "lucide-react";
-// import {
-//   Combobox,
-//   ComboboxContent,
-//   ComboboxEmpty,
-//   ComboboxInput,
-//   ComboboxItem,
-//   ComboboxList,
-// } from "@/components/ui/combobox";
 
 import Select from "react-select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
 import { useToast } from "@/hooks/use-toast";
 import BASE_URL from "@/config/BaseUrl";
 import Page from "../dashboard/page";
@@ -35,12 +26,9 @@ import { getTodayDate } from "@/utils/currentDate";
 import dateyear from "@/utils/DateYear";
 import { useFetchFactory } from "@/hooks/useApi";
 import { LoaderComponent } from "@/components/LoaderComponent/LoaderComponent";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import ScannerModel from "@/components/ScannerModel";
+
+// ---------- Validation Schema (unchanged) ----------
 const orderSchema = z.object({
   work_order_rc_year: z.string(),
   work_order_rc_date: z.string().min(1, "Date is required"),
@@ -58,16 +46,15 @@ const orderSchema = z.object({
   work_order_rc_remarks: z.string().optional(),
 });
 
-const workReceiveOptions = [
-  { value: "Yes", label: "Yes" },
-  { value: "No", label: "No" },
-];
-
 const FactoryOrderReceived = () => {
   const navigate = useNavigate();
   const inputRefs = useRef([]);
   const { toast } = useToast();
 
+  // ---------- Multi‑step state ----------
+  const [step, setStep] = useState(1); // 1 = header, 2 = barcodes
+
+  // ---------- Factory ----------
   const storedFactoryName = localStorage.getItem("name");
   const [selectedFactory, setSelectedFactory] = useState(null);
   const [isFactoryLoading, setIsFactoryLoading] = useState(true);
@@ -77,7 +64,7 @@ const FactoryOrderReceived = () => {
     work_order_rc_date: getTodayDate() || "",
     work_order_rc_factory_no: localStorage.getItem("factory_id"),
     work_order_rc_id: "",
-    work_order_no: "", // for ref
+    work_order_no: "",
     work_order_rc_dc_no: "",
     work_order_rc_dc_date: getTodayDate() || "",
     work_order_rc_brand: "",
@@ -93,20 +80,20 @@ const FactoryOrderReceived = () => {
     { work_order_rc_sub_barcode: "", work_order_rc_sub_box: 1, barcodes: [] },
   ]);
   const [loadingStates, setLoadingStates] = useState({});
-
   const [duplicateBarcodes, setDuplicateBarcodes] = useState({});
-  const [open, setOpen] = useState(false);
   const [activeInputIndex, setActiveInputIndex] = useState(null);
   const [currentInputValue, setCurrentInputValue] = useState("");
   const [highlightedItem, setHighlightedItem] = useState(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+
   const { data: factoryData, isFetching } = useFetchFactory();
 
+  // ---------- Effects ----------
   useEffect(() => {
     if (factoryData?.factory && storedFactoryName) {
       const matchedFactory = factoryData.factory.find(
         (factory) => factory.factory_name === storedFactoryName,
       );
-
       if (matchedFactory) {
         setSelectedFactory(matchedFactory);
         setWorkorder((prev) => ({
@@ -121,16 +108,12 @@ const FactoryOrderReceived = () => {
   }, [factoryData, storedFactoryName]);
 
   useEffect(() => {
-    const totalBoxes = users.length;
-    const totalPcs = users.reduce(
-      (total, user) => total + user.barcodes.length,
-      0,
-    );
-
     setWorkorder((prev) => ({
       ...prev,
-      work_order_rc_box: totalBoxes.toString(),
-      work_order_rc_pcs: totalPcs.toString(),
+      work_order_rc_box: users.length.toString(),
+      work_order_rc_pcs: users
+        .reduce((total, u) => total + u.barcodes.length, 0)
+        .toString(),
     }));
   }, [users]);
 
@@ -139,16 +122,12 @@ const FactoryOrderReceived = () => {
     queryFn: async () => {
       if (!workorder.work_order_rc_factory_no) return [];
       const token = localStorage.getItem("token");
-      const response = await fetch(
+      const res = await fetch(
         `${BASE_URL}/api/fetch-work-order/${workorder.work_order_rc_factory_no}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
+        { headers: { Authorization: `Bearer ${token}` } },
       );
-      if (!response.ok) throw new Error("Failed to fetch work orders");
-      const data = await response.json();
+      if (!res.ok) throw new Error("Failed to fetch work orders");
+      const data = await res.json();
       return (data.workorder || []).sort(
         (a, b) => b.work_order_no - a.work_order_no,
       );
@@ -161,16 +140,12 @@ const FactoryOrderReceived = () => {
     queryFn: async () => {
       if (!workorder.work_order_rc_id) return { work_order_brand: "" };
       const token = localStorage.getItem("token");
-      const response = await fetch(
+      const res = await fetch(
         `${BASE_URL}/api/fetch-work-order-brand/${workorder.work_order_rc_id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
+        { headers: { Authorization: `Bearer ${token}` } },
       );
-      if (!response.ok) throw new Error("Failed to fetch brand");
-      const data = await response.json();
+      if (!res.ok) throw new Error("Failed to fetch brand");
+      const data = await res.json();
       return data.workorderbrand || { work_order_brand: "" };
     },
     enabled: !!workorder.work_order_rc_id,
@@ -185,10 +160,10 @@ const FactoryOrderReceived = () => {
     }
   }, [brandData]);
 
+  // ---------- Mutations ----------
   const submitMutation = useMutation({
     mutationFn: async (data) => {
       const token = localStorage.getItem("token");
-
       const submissionData = {
         ...data,
         workorder_sub_rc_data: data.workorder_sub_rc_data.map((user) => ({
@@ -196,85 +171,45 @@ const FactoryOrderReceived = () => {
           work_order_rc_sub_barcode: user.barcodes.join(","),
         })),
       };
-
-      const response = await fetch(
-        `${BASE_URL}/api/create-work-order-received`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(submissionData),
+      const res = await fetch(`${BASE_URL}/api/create-work-order-received`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
-      if (!response.ok) throw new Error("Failed to create order");
-      return response.json();
+        body: JSON.stringify(submissionData),
+      });
+      if (!res.ok) throw new Error("Failed to create order");
+      return res.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Order received successfully",
-        variant: "default",
-      });
+      toast({ title: "Success", description: "Order received successfully" });
       navigate("/work-order");
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: error.response?.data?.message,
+        description: error.message,
         variant: "destructive",
       });
     },
   });
 
+  // ---------- Handlers ----------
   const onInputChange = (e) => {
     const { name, value } = e.target;
-    setWorkorder({
-      ...workorder,
-      [name]: value,
-    });
+    setWorkorder((prev) => ({ ...prev, [name]: value }));
   };
 
-  const calculateDuplicates = (users) => {
-    const allBarcodes = [];
+  const addBarcodeToBox = async (index, barcodeOverride = null) => {
+    const barcode =
+      barcodeOverride !== null
+        ? barcodeOverride.toUpperCase().trim()
+        : currentInputValue.trim();
+    if (!barcode) return;
 
-    users.forEach((user) => {
-      user.barcodes.forEach((barcode) => {
-        if (barcode) {
-          allBarcodes.push(barcode);
-        }
-      });
-    });
-
-    const duplicates = {};
-    const seen = {};
-
-    allBarcodes.forEach((barcode) => {
-      if (seen[barcode]) {
-        duplicates[barcode] = (duplicates[barcode] || 1) + 1;
-      } else {
-        seen[barcode] = true;
-      }
-    });
-
-    return duplicates;
-  };
-
-  useEffect(() => {
-    setDuplicateBarcodes(calculateDuplicates(users));
-  }, [users]);
-
-  const handleBarcodeInputChange = (e, index) => {
-    setCurrentInputValue(e.target.value);
-  };
-
-  const addBarcodeToBox = async (index) => {
-    if (!currentInputValue.trim()) return;
     setLoadingStates((prev) => ({ ...prev, [index]: true }));
-
     try {
-      const barcode = currentInputValue.trim();
       if (barcode.length !== 6) {
         toast({
           title: "Invalid format",
@@ -283,33 +218,19 @@ const FactoryOrderReceived = () => {
         });
         return;
       }
-
-      const workId = workorder.work_order_no;
       const token = localStorage.getItem("token");
-
-      const response = await fetch(
-        `${BASE_URL}/api/fetch-work-order-finish-check/${workId}/${barcode}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
+      const res = await fetch(
+        `${BASE_URL}/api/fetch-work-order-finish-check/${workorder.work_order_no}/${barcode}`,
+        { headers: { Authorization: `Bearer ${token}` } },
       );
-
-      if (!response.ok) throw new Error("Barcode validation failed");
-      const data = await response.json();
-
+      if (!res.ok) throw new Error("Barcode validation failed");
+      const data = await res.json();
       if (data?.code === 200) {
         const newUsers = [...users];
         newUsers[index].barcodes.push(barcode);
         setUsers(newUsers);
-        setCurrentInputValue("");
-
-        toast({
-          title: "Success",
-          description: "Barcode added successfully",
-          variant: "default",
-        });
+        if (barcodeOverride === null) setCurrentInputValue("");
+        toast({ title: "Success", description: "Barcode added" });
       } else {
         toast({
           title: "Error",
@@ -346,29 +267,48 @@ const FactoryOrderReceived = () => {
 
   const addItem = (e) => {
     e.preventDefault();
-    const newUsers = [
-      ...users,
+    setUsers((prev) => [
+      ...prev,
       {
         work_order_rc_sub_barcode: "",
-        work_order_rc_sub_box: users.length + 1,
+        work_order_rc_sub_box: prev.length + 1,
         barcodes: [],
       },
-    ];
-    setUsers(newUsers);
+    ]);
   };
 
   const removeUser = (index) => {
-    const newUsers = users.filter((_, i) => i !== index);
-    const updatedUsers = newUsers.map((u, i) => ({
-      ...u,
-      work_order_rc_sub_box: i + 1,
-    }));
-    setUsers(updatedUsers);
+    setUsers((prev) => {
+      const filtered = prev.filter((_, i) => i !== index);
+      return filtered.map((u, i) => ({ ...u, work_order_rc_sub_box: i + 1 }));
+    });
   };
 
+  // ---------- Step navigation ----------
+  const goToStep2 = (e) => {
+    e.preventDefault();
+    // Quick required‑field check for Step 1
+    if (
+      !workorder.work_order_rc_id ||
+      !workorder.work_order_rc_dc_no ||
+      !workorder.work_order_rc_dc_date ||
+      !workorder.work_order_rc_date
+    ) {
+      toast({
+        title: "Missing fields",
+        description: "Please fill all required fields in Step 1.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setStep(2);
+  };
+
+  const goToStep1 = () => setStep(1);
+
+  // ---------- Final submit ----------
   const onSubmit = async (e) => {
     e.preventDefault();
-
     const data = {
       ...workorder,
       work_order_rc_year: dateyear,
@@ -378,75 +318,88 @@ const FactoryOrderReceived = () => {
       work_order_rc_brand: brandData?.work_order_brand || "",
     };
 
-    try {
-      const validation = orderSchema.safeParse(data);
-      if (!validation.success) {
-        toast({
-          variant: "destructive",
-          title: "Please fix the following:",
-          description: (
-            <div className="grid gap-1">
-              {validation.error.errors.map((error, i) => {
-                const field = error.path[0].replace(/_/g, " ");
-                const label = field.charAt(0).toUpperCase() + field.slice(1);
-                return (
-                  <div key={i} className="flex items-start gap-2">
-                    <div className="flex items-center justify-center h-4 w-4 mt-0.5 flex-shrink-0 rounded-full bg-red-100 text-red-700 text-xs">
-                      {i + 1}
-                    </div>
-                    <p className="text-xs">
-                      <span className="font-medium">{label}:</span>{" "}
-                      {error.message}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          ),
-        });
-        return;
-      }
-
-      const totalBarcodes = users.reduce(
-        (total, user) => total + user.barcodes.length,
-        0,
-      );
-      if (totalBarcodes === 0) {
-        toast({
-          variant: "destructive",
-          title: "No Barcodes",
-          description: "Please add at least one barcode before submitting.",
-        });
-        return;
-      }
-
-      submitMutation.mutate(data);
-    } catch (error) {
+    const validation = orderSchema.safeParse(data);
+    if (!validation.success) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "An unexpected error occurred during validation",
+        title: "Validation Error",
+        description: validation.error.errors.map((e) => e.message).join(", "),
       });
+      return;
     }
+
+    const totalBarcodes = users.reduce((t, u) => t + u.barcodes.length, 0);
+    if (totalBarcodes === 0) {
+      toast({
+        variant: "destructive",
+        title: "No Barcodes",
+        description: "Please add at least one barcode.",
+      });
+      return;
+    }
+
+    submitMutation.mutate(data);
   };
 
-  const totalTCodes = users.reduce(
-    (total, user) => total + user.barcodes.length,
-    0,
-  );
+  // ---------- Scanner helpers ----------
+  const openScannerForBox = (index) => {
+    setActiveInputIndex(index);
+    setCurrentInputValue("");
+    setIsScannerOpen(true);
+  };
+
+  const closeScanner = () => setIsScannerOpen(false);
+
+  const handleScannerScan = (value) => {
+    if (activeInputIndex === null && activeInputIndex !== 0) return;
+    addBarcodeToBox(activeInputIndex, value);
+    setIsScannerOpen(false);
+  };
+
+  // ---------- Derived values ----------
+  const totalTCodes = users.reduce((t, u) => t + u.barcodes.length, 0);
+  const totalBoxes = users.length;
 
   if (isFetching || isFactoryLoading) {
     return <LoaderComponent name="Data" />;
   }
 
+  // ======================== RENDER ========================
   return (
     <Page>
       <div className="max-w-full mx-auto">
+        {/* ---------- Step indicator ---------- */}
+        <div className="flex items-center justify-center mb-4">
+          <div className="flex items-center space-x-2">
+            <div
+              className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                step === 1
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-500"
+              }`}
+            >
+              1
+            </div>
+            <div className="w-12 h-0.5 bg-gray-300" />
+            <div
+              className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                step === 2
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-500"
+              }`}
+            >
+              2
+            </div>
+          </div>
+        </div>
+
         <Card className="shadow-lg">
           <CardHeader className="border-b">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold">
-                Add Material Received
+                {step === 1
+                  ? "Add New Packing Slip – Details"
+                  : "Add New Packing Slip – Barcodes"}
               </CardTitle>
               <Button variant="outline" size="sm" asChild>
                 <Link to="/work-order" className="flex items-center gap-2">
@@ -458,355 +411,333 @@ const FactoryOrderReceived = () => {
           </CardHeader>
 
           <CardContent className="p-4">
-            <form className="space-y-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* <div className="space-y-1">
-                  <Label htmlFor="factory">
-                    Factory <span className="text-red-500">*</span>
-                    {selectedFactory && (
-                      <span className="text-xs text-green-600 ml-2">(Auto-selected)</span>
-                    )}
-                  </Label>
-                  {isFactoryLoading ? (
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="text-sm text-gray-500">Loading factory...</span>
-                    </div>
-                  ) : (
-                    <Select
-                      name="work_order_rc_factory_no"
-                      value={workorder.work_order_rc_factory_no}
-                      onValueChange={(value) => {
-                        setWorkorder({
-                          ...workorder,
-                          work_order_rc_factory_no: value,
-                          work_order_rc_id: "",
-                        });
-                      }}
-                      disabled={!!selectedFactory} 
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select factory">
-                          {selectedFactory ? selectedFactory.factory_name : "Select factory"}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {factoryData?.factory.map((factory) => (
-                          <SelectItem
-                            key={factory.factory_no}
-                            value={factory.factory_no.toString()}
-                          >
-                            {factory.factory_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                  {!selectedFactory && storedFactoryName && (
-                    <p className="text-xs text-amber-600 mt-1">
-                      Factory "{storedFactoryName}" not found in available factories
-                    </p>
-                  )}
-                </div> */}
-
-                {/* Work Order ID */}
-
-                <div className="space-y-1">
-                  <Label htmlFor="workOrderId">
-                    Work Order ID <span className="text-red-500">*</span>
-                  </Label>
-                  <Select
-                    options={workOrders.map((item) => ({
-                      value: item.id,
-                      label: item.work_order_no,
-                    }))}
-                    value={
-                      workOrders
-                        .filter(
-                          (item) => item.id === workorder.work_order_rc_id,
-                        )
-                        .map((item) => ({
+            <form onSubmit={step === 1 ? goToStep2 : onSubmit}>
+              {/* ============ STEP 1: HEADER FIELDS ============ */}
+              {step === 1 && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Work Order ID */}
+                    <div className="space-y-1">
+                      <Label>
+                        Work Order ID <span className="text-red-500">*</span>
+                      </Label>
+                      <Select
+                        options={workOrders.map((item) => ({
                           value: item.id,
-                          label: item.work_order_no,
-                        }))[0] || null
-                    }
-                    onChange={(selected) => {
-                      const workOrder = workOrders.find(
-                        (item) => item.id === selected.value,
-                      );
+                          label: String(item.work_order_no),
+                        }))}
+                        value={
+                          workOrders
+                            .filter(
+                              (item) => item.id === workorder.work_order_rc_id,
+                            )
+                            .map((item) => ({
+                              value: item.id,
+                              label: String(item.work_order_no),
+                            }))[0] || null
+                        }
+                        onChange={(selected) => {
+                          if (!selected) {
+                            setWorkorder((prev) => ({
+                              ...prev,
+                              work_order_rc_id: "",
+                              work_order_no: "",
+                            }));
+                            return;
+                          }
+                          const wo = workOrders.find(
+                            (w) => w.id === selected.value,
+                          );
+                          setWorkorder((prev) => ({
+                            ...prev,
+                            work_order_rc_id: wo.id,
+                            work_order_no: wo.work_order_no,
+                          }));
+                        }}
+                        isSearchable
+                        isClearable
+                        placeholder="Search Work Order"
+                        filterOption={(option, input) =>
+                          option.label.startsWith(input)
+                        }
+                      />
+                    </div>
 
-                      setWorkorder((prev) => ({
-                        ...prev,
-                        work_order_rc_id: workOrder.id,
-                        work_order_no: workOrder.work_order_no,
-                      }));
-                    }}
-                    isSearchable
-                    placeholder="Search Work Order"
-                  />
+                    {/* Brand (read only) */}
+                    <div className="space-y-1">
+                      <Label>Brand (read only)</Label>
+                      <Input value={workorder.work_order_rc_brand} readOnly />
+                    </div>
+
+                    {/* Receive Date */}
+                    <div className="space-y-1">
+                      <Label>
+                        Date <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        type="date"
+                        name="work_order_rc_date"
+                        value={workorder.work_order_rc_date}
+                        onChange={onInputChange}
+                      />
+                    </div>
+
+                    {/* DC No */}
+                    <div className="space-y-1">
+                      <Label>
+                        DC No <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        name="work_order_rc_dc_no"
+                        value={workorder.work_order_rc_dc_no}
+                        onChange={onInputChange}
+                      />
+                    </div>
+
+                    {/* DC Date */}
+                    <div className="space-y-1">
+                      <Label>
+                        DC Date <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        type="date"
+                        name="work_order_rc_dc_date"
+                        value={workorder.work_order_rc_dc_date}
+                        onChange={onInputChange}
+                      />
+                    </div>
+
+                    {/* Remarks */}
+                    <div className="space-y-1 col-span-full">
+                      <Label>Remarks</Label>
+                      <Input
+                        name="work_order_rc_remarks"
+                        value={workorder.work_order_rc_remarks}
+                        onChange={onInputChange}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Button type="submit" className="gap-2">
+                      Next <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                {/* Brand */}
-                <div className="space-y-1">
-                  <Label htmlFor="brand">Brand (read only)</Label>
-                  <Input
-                    id="brand"
-                    name="work_order_rc_brand"
-                    value={workorder.work_order_rc_brand}
-                    readOnly
-                  />
-                </div>
+              )}
 
-                {/* Receive Date */}
-                <div className="space-y-1">
-                  <Label htmlFor="receiveDate">
-                    Date <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    type="date"
-                    id="receiveDate"
-                    name="work_order_rc_date"
-                    value={workorder.work_order_rc_date}
-                    onChange={onInputChange}
-                  />
-                </div>
+              {/* ============ STEP 2: BARCODE ENTRIES ============ */}
+              {step === 2 && (
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <Label className="text-sm font-medium">
+                      Barcode Entries (Total Box: {totalBoxes}, Total Pieces:{" "}
+                      {totalTCodes})
+                    </Label>
+                    <div className="space-y-2">
+                      {users.map((user, index) => {
+                        const boxDuplicates = {};
+                        user.barcodes.forEach((b) => {
+                          boxDuplicates[b] = (boxDuplicates[b] || 0) + 1;
+                        });
 
-                {/* DC No */}
-                <div className="space-y-1">
-                  <Label htmlFor="dcNo">
-                    DC No <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="dcNo"
-                    name="work_order_rc_dc_no"
-                    value={workorder.work_order_rc_dc_no}
-                    onChange={onInputChange}
-                  />
-                </div>
+                        const formatDuplicates = () =>
+                          Object.entries(boxDuplicates)
+                            .filter(([, count]) => count > 1)
+                            .map(([code, c]) => `${code} × ${c}`)
+                            .join(", ");
 
-                {/* DC Date */}
-                <div className="space-y-1">
-                  <Label htmlFor="dcDate">
-                    DC Date <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    type="date"
-                    id="dcDate"
-                    name="work_order_rc_dc_date"
-                    value={workorder.work_order_rc_dc_date}
-                    onChange={onInputChange}
-                  />
-                </div>
-
-                {/* Fabric Received */}
-
-                {/* Remarks */}
-                <div
-                  className={`space-y-1 ${
-                    workorder.work_order_rc_fabric_received === "Yes"
-                      ? "col-span-full"
-                      : "col-span-3"
-                  }`}
-                >
-                  <Label htmlFor="remarks">Remarks</Label>
-                  <Input
-                    id="remarks"
-                    name="work_order_rc_remarks"
-                    value={workorder.work_order_rc_remarks}
-                    onChange={onInputChange}
-                  />
-                </div>
-              </div>
-
-              <hr className="my-2" />
-
-              <div className="space-y-1">
-                <Label className="text-sm font-medium">
-                  Barcode Entries (Total Box: {users.length}, Total Barcode:{" "}
-                  {totalTCodes})
-                </Label>
-                <div className="space-y-2">
-                  {users.map((user, index) => {
-                    const boxDuplicates = {};
-                    user.barcodes.forEach((barcode) => {
-                      if (boxDuplicates[barcode]) {
-                        boxDuplicates[barcode] += 1;
-                      } else {
-                        boxDuplicates[barcode] = 1;
-                      }
-                    });
-
-                    const formatBoxDuplicates = () => {
-                      return Object.entries(boxDuplicates)
-                        .filter(([_, count]) => count > 1)
-                        .map(([barcode, count]) => `${barcode} × ${count}`)
-                        .join(", ");
-                    };
-
-                    return (
-                      <div
-                        key={index}
-                        className="border rounded p-2 bg-gray-50"
-                      >
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <Label className="text-xs font-medium">
-                            Box {index + 1} - {user.barcodes.length} pieces
-                          </Label>
-                          <div className="flex items-center gap-1">
-                            <Input
-                              ref={(el) => (inputRefs.current[index] = el)}
-                              value={
-                                activeInputIndex === index
-                                  ? currentInputValue
-                                  : ""
-                              }
-                              onChange={(e) => {
-                                const value = e.target.value
-                                  .toUpperCase()
-                                  .replace(/\s/g, "");
-                                handleBarcodeInputChange(
-                                  { target: { value } },
-                                  index,
-                                );
-                              }}
-                              onKeyPress={(e) => handleKeyPress(e, index)}
-                              onFocus={() => {
-                                setActiveInputIndex(index);
-                                setCurrentInputValue("");
-                              }}
-                              onPaste={(e) => {
-                                const pastedText = e.clipboardData
-                                  .getData("text")
-                                  .toUpperCase()
-                                  .replace(/\s/g, "");
-                                e.preventDefault();
-                                document.execCommand(
-                                  "insertText",
-                                  false,
-                                  pastedText,
-                                );
-                                handleBarcodeInputChange(
-                                  { target: { value: pastedText } },
-                                  index,
-                                );
-                              }}
-                              placeholder="6-digit barcode"
-                              className="h-8 text-xs p-1 uppercase bg-blue-200 text-black"
-                              maxLength={6}
-                            />
-
-                            <Button
-                              type="button"
-                              onClick={() => addBarcodeToBox(index)}
-                              disabled={
-                                !currentInputValue.trim() ||
-                                activeInputIndex !== index
-                              }
-                              size="sm"
-                              className="h-8 w-8 p-1"
-                            >
-                              {loadingStates[index] ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <Plus className="h-3 w-3" />
-                              )}
-                            </Button>
-
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              type="button"
-                              onClick={() => removeUser(index)}
-                              className="h-8 w-8 hover:text-red-800 p-1"
-                              disabled={users.length <= 1}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-
-                        <div className="mb-1">
-                          {user.barcodes.length > 0 ? (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1">
-                              {user.barcodes.map((barcode, barcodeIndex) => (
-                                <div
-                                  key={`${index}-${barcode}-${barcodeIndex}`}
-                                  className={`bg-white p-1 rounded border border-gray-200 text-xs flex items-center justify-between ${
-                                    highlightedItem === barcode
-                                      ? "bg-blue-100 border-2 border-blue-600"
+                        return (
+                          <div
+                            key={index}
+                            className="border rounded p-2 bg-gray-50"
+                          >
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <Label className="text-xs font-medium">
+                                Box {index + 1} - {user.barcodes.length} pieces
+                              </Label>
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  ref={(el) => (inputRefs.current[index] = el)}
+                                  value={
+                                    activeInputIndex === index
+                                      ? currentInputValue
                                       : ""
-                                  }`}
+                                  }
+                                  onChange={(e) =>
+                                    setCurrentInputValue(
+                                      e.target.value
+                                        .toUpperCase()
+                                        .replace(/\s/g, ""),
+                                    )
+                                  }
+                                  onKeyPress={(e) => handleKeyPress(e, index)}
+                                  onFocus={() => {
+                                    setActiveInputIndex(index);
+                                    setCurrentInputValue("");
+                                  }}
+                                  placeholder="6-digit barcode"
+                                  className="h-8 text-xs p-1 uppercase bg-blue-200 text-black"
+                                  maxLength={6}
+                                />
+
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 w-8 p-1"
+                                  onClick={() => openScannerForBox(index)}
+                                  title="Scan barcode"
                                 >
-                                  <div className="flex items-center min-w-0 flex-1">
-                                    <span className="text-gray-500 mr-1 w-4 text-right shrink-0">
-                                      {barcodeIndex + 1}.
-                                    </span>
-                                    <span
-                                      className="font-mono truncate"
-                                      title={barcode}
-                                    >
-                                      {barcode}
-                                    </span>
-                                  </div>
+                                  <Camera className="h-4 w-4" />
+                                </Button>
 
-                                  <div className="flex items-center gap-0.5">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      type="button"
-                                      onClick={() =>
-                                        removeBarcode(index, barcodeIndex)
-                                      }
-                                      className="h-5 w-5 hover:bg-red-100 text-red-500 shrink-0 p-0.5"
+                                <Button
+                                  type="button"
+                                  onClick={() => addBarcodeToBox(index)}
+                                  disabled={
+                                    !currentInputValue.trim() ||
+                                    activeInputIndex !== index
+                                  }
+                                  size="sm"
+                                  className="h-8 w-8 p-1"
+                                >
+                                  {loadingStates[index] ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <Plus className="h-3 w-3" />
+                                  )}
+                                </Button>
+
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  type="button"
+                                  onClick={() => removeUser(index)}
+                                  className="h-8 w-8 hover:text-red-800 p-1"
+                                  disabled={users.length <= 1}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+
+                            <div className="mb-1">
+                              {user.barcodes.length > 0 ? (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1">
+                                  {user.barcodes.map((barcode, bIdx) => (
+                                    <div
+                                      key={`${index}-${barcode}-${bIdx}`}
+                                      className={`bg-white p-1 rounded border border-gray-200 text-xs flex items-center justify-between ${
+                                        highlightedItem === barcode
+                                          ? "bg-blue-100 border-2 border-blue-600"
+                                          : ""
+                                      }`}
                                     >
-                                      <Minus className="h-2.5 w-2.5" />
-                                    </Button>
-                                  </div>
+                                      <div className="flex items-center min-w-0 flex-1">
+                                        <span className="text-gray-500 mr-1 w-4 text-right shrink-0">
+                                          {bIdx + 1}.
+                                        </span>
+                                        <span
+                                          className="font-mono truncate"
+                                          title={barcode}
+                                        >
+                                          {barcode}
+                                        </span>
+                                      </div>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        type="button"
+                                        onClick={() =>
+                                          removeBarcode(index, bIdx)
+                                        }
+                                        className="h-5 w-5 hover:bg-red-100 text-red-500 shrink-0 p-0.5"
+                                      >
+                                        <Minus className="h-2.5 w-2.5" />
+                                      </Button>
+                                    </div>
+                                  ))}
                                 </div>
-                              ))}
+                              ) : (
+                                <p className="text-xs text-gray-500 italic">
+                                  No barcodes added yet
+                                </p>
+                              )}
+                              {Object.keys(boxDuplicates).filter(
+                                (code) => boxDuplicates[code] > 1,
+                              ).length > 0 && (
+                                <div className="mt-1 text-amber-600 text-xs">
+                                  Duplicates: {formatDuplicates()}
+                                </div>
+                              )}
                             </div>
-                          ) : (
-                            <p className="text-xs text-gray-500 italic">
-                              No barcodes added yet
-                            </p>
-                          )}
-                          {Object.keys(boxDuplicates).filter(
-                            (barcode) => boxDuplicates[barcode] > 1,
-                          ).length > 0 && (
-                            <div className="mt-1 text-amber-600 text-xs">
-                              Duplicates: {formatBoxDuplicates()}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={addItem}
+                      size="sm"
+                      className="mt-1 h-8"
+                    >
+                      + Add Box
+                    </Button>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={goToStep1}
+                      className="gap-2"
+                    >
+                      <ArrowLeft className="h-4 w-4" /> Back
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={submitMutation.isPending}
+                      className="gap-2"
+                    >
+                      {submitMutation.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" /> Saving…
+                        </>
+                      ) : (
+                        "Save"
+                      )}
+                    </Button>
+                  </div>
                 </div>
-
-                <Button
-                  variant="outline"
-                  onClick={addItem}
-                  size="sm"
-                  className="mt-1 h-8"
-                >
-                  + Add Box
-                </Button>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4">
-                <Button variant="outline" asChild>
-                  <Link to="/work-order">Cancel</Link>
-                </Button>
-                <Button
-                  type="button"
-                  onClick={onSubmit}
-                  disabled={submitMutation.isPending}
-                >
-                  {submitMutation.isPending ? "Submitting..." : "Submit"}
-                </Button>
-              </div>
+              )}
             </form>
           </CardContent>
         </Card>
+
+        {/* Scanner Modal (same as before) */}
+        {isScannerOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white rounded-lg p-4 w-full max-w-md mx-4 relative">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-lg font-semibold">Scan Barcode</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={closeScanner}
+                  className="h-8 w-8 p-0"
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+              </div>
+              <ScannerModel barcodeScannerValue={handleScannerScan} />
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Position the barcode inside the scanner view
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </Page>
   );

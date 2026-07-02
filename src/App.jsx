@@ -7,16 +7,7 @@ import { Toaster } from "./components/ui/toaster";
 import AppRoutes from "./routes/AppRoutes";
 import { Suspense } from "react";
 
-
-
-
-
-
 function App() {
-
-
- 
-
   return (
     <>
       <Toaster />
