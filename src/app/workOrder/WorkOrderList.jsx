@@ -465,7 +465,7 @@ const WorkOrderList = () => {
               className={`ml-2 ${ButtonConfig.backgroundColor} ${ButtonConfig.hoverBackgroundColor} ${ButtonConfig.textColor}`}
               onClick={() => navigate("/work-order/factory-create-work-order")}
             >
-              <SquarePlus className="h-4 w-4" /> Material Received
+              <SquarePlus className="h-4 w-4" /> New Packaging Slip
             </Button>
           )}
         </div>

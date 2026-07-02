@@ -178,7 +178,7 @@ export function AppSidebar({ ...props }) {
               isActive: false,
             },
             {
-              title: "Material Received",
+              title: "New Packing Slip",
               url: "/order-received",
               icon: NotebookText,
               isActive: false,

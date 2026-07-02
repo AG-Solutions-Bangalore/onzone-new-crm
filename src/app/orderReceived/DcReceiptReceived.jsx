@@ -1,10 +1,18 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import Page from "../dashboard/page";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import moment from "moment";
 import ReactToPrint from "react-to-print";
-import { Printer, BarcodeIcon, Plus, Minus, Loader2, CheckCircle, XCircle } from "lucide-react";
+import {
+  Printer,
+  BarcodeIcon,
+  Plus,
+  Minus,
+  Loader2,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -49,6 +57,8 @@ const DcReceiptReceived = () => {
   const [validationStatus, setValidationStatus] = useState(null);
   const location = useLocation();
 
+  const [checkedBoxes, setCheckedBoxes] = useState(new Set());
+
   const { orderReceivedStatus } = location.state || {};
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -59,27 +69,102 @@ const DcReceiptReceived = () => {
         `${BASE_URL}/api/fetch-work-order-received-view-by-id/${id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
       return {
         workOrder: response.data.workorderrc || {},
-        workOrderSub: response.data.workorderrcsubNew || [],
+        workOrderSub: response.data.workorderrcsub || [],
         workOrderFooter: response.data.workorderfooter || {},
       };
     },
   });
 
+  const { workOrder = {}, workOrderSub = [] } = data || {};
+
+  // --- Build table rows (aggregated by box, barcode, size, rate) ---
+  const tableRows = useMemo(() => {
+    const rows = [];
+    workOrderSub.forEach((item) => {
+      const box = item.work_order_rc_sub_box || "1";
+      const barcodeStr = item.work_order_rc_sub_barcode || "";
+      const barcodes = barcodeStr.split(",").filter((b) => b.trim());
+      if (barcodes.length === 0) return;
+
+      const size = item.finished_stock_size || "N/A";
+      const amount = item.finished_stock_amount || "N/A";
+
+      barcodes.forEach((barcode) => {
+        rows.push({
+          box,
+          barcode: barcode.trim(),
+          size,
+          amount,
+        });
+      });
+    });
+
+    const aggregated = {};
+    rows.forEach((row) => {
+      const key = `${row.box}|${row.barcode}|${row.size}|${row.amount}`;
+      if (!aggregated[key]) {
+        aggregated[key] = { ...row, quantity: 0 };
+      }
+      aggregated[key].quantity += 1;
+    });
+
+    return Object.values(aggregated);
+  }, [workOrderSub]);
+
+  // Group by box for rendering
+  const groupedRows = useMemo(() => {
+    return tableRows.reduce((acc, row) => {
+      if (!acc[row.box]) acc[row.box] = [];
+      acc[row.box].push(row);
+      return acc;
+    }, {});
+  }, [tableRows]);
+
+  // Build grouped boxes for barcode dialog
+  const groupedBoxesForDialog = useMemo(() => {
+    return workOrderSub.reduce((acc, item) => {
+      const boxNumber = item.work_order_rc_sub_box;
+      if (!acc[boxNumber]) {
+        acc[boxNumber] = {
+          barcodes: [],
+          totalPcs: 0,
+        };
+      }
+
+      if (item.work_order_rc_sub_barcode) {
+        const barcodes = item.work_order_rc_sub_barcode
+          .split(",")
+          .filter((b) => b.trim());
+        acc[boxNumber].barcodes.push(...barcodes);
+        acc[boxNumber].totalPcs += barcodes.length;
+      }
+
+      return acc;
+    }, {});
+  }, [workOrderSub]);
+
+  // Sort box numbers numerically
+  const sortedBoxes = useMemo(
+    () => Object.keys(groupedRows).sort((a, b) => Number(a) - Number(b)),
+    [groupedRows],
+  );
+
+  // Checkboxes are kept unchecked by default on load as per requirements
+
   const generateFactoryCode = (factoryName) => {
     if (!factoryName) return "";
-    
     return factoryName
       .split(" ")
-      .map(word => word.charAt(0).toUpperCase())
+      .map((word) => word.charAt(0).toUpperCase())
       .join("");
   };
 
   const formatBoxNumber = (boxNumber) => {
-    const factoryCode = generateFactoryCode(data?.workOrder?.work_order_rc_factory);
+    const factoryCode = generateFactoryCode(workOrder.work_order_rc_factory);
     return `${factoryCode}${id}${boxNumber}`;
   };
 
@@ -91,7 +176,7 @@ const DcReceiptReceived = () => {
         null,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
     },
     onSuccess: (response) => {
@@ -119,7 +204,7 @@ const DcReceiptReceived = () => {
         submissionData,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
       return response.data;
     },
@@ -170,100 +255,83 @@ const DcReceiptReceived = () => {
   const handleBarcodeInputChange = (e) => {
     const value = e.target.value.toUpperCase();
     setCurrentInputValue(value);
-    
-    // Clear validation status when user starts typing
     if (value.length === 0) {
       setValidationStatus(null);
     }
   };
 
-  // Validate barcode against the work order
   const validateBarcode = async (barcode) => {
     if (!barcode || barcode.length !== 6) {
       return {
         valid: false,
-        message: "Barcode must be exactly 6 digits"
+        message: "Barcode must be exactly 6 digits",
       };
     }
 
     try {
-      const workId = data?.workOrder?.work_order_rc_id;
+      const workId = workOrder.work_order_rc_id;
       const token = localStorage.getItem("token");
-      
+
       const response = await axios.get(
         `${BASE_URL}/api/fetch-work-order-finish-check/${workId}/${barcode}`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
 
       if (response.data?.code === 200) {
         return {
           valid: true,
           message: "Barcode validated successfully",
-          data: response.data
+          data: response.data,
         };
       } else {
         return {
           valid: false,
-          message: response.data?.msg || "Barcode not found in work order"
+          message: response.data?.msg || "Barcode not found in work order",
         };
       }
     } catch (error) {
       return {
         valid: false,
-        message: "Error validating barcode"
+        message: "Error validating barcode",
       };
     }
   };
 
-  // Check if barcode already exists in current box
-  const isBarcodeDuplicate = (barcode) => {
-    if (!selectedBox) return false;
-    return selectedBox.currentBarcodes.includes(barcode);
-  };
-
   const addBarcodeToBox = async () => {
     if (!currentInputValue.trim() || !selectedBox) return;
-    
+
     const barcode = currentInputValue.trim().toUpperCase();
-    
-    // Validate format first
+
     if (barcode.length !== 6) {
       setValidationStatus({
         type: "error",
-        message: "Barcode must be exactly 6 digits"
+        message: "Barcode must be exactly 6 digits",
       });
       return;
     }
 
-    // Check for duplicates in current box
-    // if (isBarcodeDuplicate(barcode)) {
-    //   setValidationStatus({
-    //     type: "error",
-    //     message: "Barcode already exists in this box"
-    //   });
-    //   return;
-    // }
-
     setLoadingStates((prev) => ({ ...prev, [selectedBox.boxNumber]: true }));
-    setValidationStatus({ type: "validating", message: "Validating barcode..." });
+    setValidationStatus({
+      type: "validating",
+      message: "Validating barcode...",
+    });
 
     try {
       const validationResult = await validateBarcode(barcode);
 
       if (validationResult.valid) {
-        // Add barcode to current box
-        setSelectedBox(prev => ({
+        setSelectedBox((prev) => ({
           ...prev,
-          currentBarcodes: [...prev.currentBarcodes, barcode]
+          currentBarcodes: [...prev.currentBarcodes, barcode],
         }));
         setCurrentInputValue("");
         setValidationStatus({
           type: "success",
-          message: "Barcode added successfully"
+          message: "Barcode added successfully",
         });
-        
+
         toast({
           title: "Success",
           description: "Barcode validated and added to box",
@@ -272,9 +340,9 @@ const DcReceiptReceived = () => {
       } else {
         setValidationStatus({
           type: "error",
-          message: validationResult.message
+          message: validationResult.message,
         });
-        
+
         toast({
           title: "Validation Failed",
           description: validationResult.message,
@@ -284,9 +352,9 @@ const DcReceiptReceived = () => {
     } catch (error) {
       setValidationStatus({
         type: "error",
-        message: "Error validating barcode"
+        message: "Error validating barcode",
       });
-      
+
       toast({
         title: "Error",
         description: "Error validating barcode",
@@ -298,7 +366,7 @@ const DcReceiptReceived = () => {
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       addBarcodeToBox();
     }
@@ -306,59 +374,64 @@ const DcReceiptReceived = () => {
 
   const removeBarcode = (barcodeIndex) => {
     if (!selectedBox) return;
-    
-    setSelectedBox(prev => ({
+
+    setSelectedBox((prev) => ({
       ...prev,
-      currentBarcodes: prev.currentBarcodes.filter((_, index) => index !== barcodeIndex)
+      currentBarcodes: prev.currentBarcodes.filter(
+        (_, index) => index !== barcodeIndex,
+      ),
     }));
-    
-    // Clear validation status when removing barcodes
+
     setValidationStatus(null);
   };
 
   const updateBoxBarcodes = () => {
     if (!selectedBox) return;
 
-    // Prepare data for API call
-    const groupedBoxes = data.workOrderSub.reduce((acc, item) => {
+    const groupedBoxes = workOrderSub.reduce((acc, item) => {
       const boxNumber = item.work_order_rc_sub_box;
       if (!acc[boxNumber]) {
         acc[boxNumber] = {
           barcodes: [],
         };
       }
-      
+
       if (boxNumber === selectedBox.boxNumber) {
-        // Use the updated barcodes for selected box
         acc[boxNumber].barcodes = [...new Set(selectedBox.currentBarcodes)];
       } else {
-        // Keep original barcodes for other boxes
         if (item.work_order_rc_sub_barcode) {
-          const barcodes = item.work_order_rc_sub_barcode.split(',').filter(b => b.trim());
+          const barcodes = item.work_order_rc_sub_barcode
+            .split(",")
+            .filter((b) => b.trim());
           acc[boxNumber].barcodes.push(...barcodes);
         }
       }
       return acc;
     }, {});
 
-    const workorder_sub_rc_data = Object.entries(groupedBoxes).map(([boxNumber, boxData]) => ({
-      work_order_rc_sub_box: boxNumber,
-      work_order_rc_sub_barcode: boxData.barcodes.join(",")
-    }));
+    const workorder_sub_rc_data = Object.entries(groupedBoxes).map(
+      ([boxNumber, boxData]) => ({
+        work_order_rc_sub_box: boxNumber,
+        work_order_rc_sub_barcode: boxData.barcodes.join(","),
+      }),
+    );
 
     const totalPcs = workorder_sub_rc_data.reduce((total, box) => {
-      const barcodes = box.work_order_rc_sub_barcode.split(',').filter(b => b.trim());
+      const barcodes = box.work_order_rc_sub_barcode
+        .split(",")
+        .filter((b) => b.trim());
       return total + barcodes.length;
     }, 0);
 
     const submissionData = {
-      work_order_rc_dc_no: data?.workOrder?.work_order_rc_dc_no,
-      work_order_rc_dc_date: data?.workOrder?.work_order_rc_dc_date,
+      work_order_rc_dc_no: workOrder.work_order_rc_dc_no,
+      work_order_rc_dc_date: workOrder.work_order_rc_dc_date,
       work_order_rc_box: Object.keys(groupedBoxes).length.toString(),
       work_order_rc_pcs: totalPcs.toString(),
-      work_order_rc_fabric_received: data?.workOrder?.work_order_rc_fabric_received || "No",
-      work_order_rc_fabric_count: data?.workOrder?.work_order_rc_fabric_count || "",
-      work_order_rc_remarks: data?.workOrder?.work_order_rc_remarks || "",
+      work_order_rc_fabric_received:
+        workOrder.work_order_rc_fabric_received || "No",
+      work_order_rc_fabric_count: workOrder.work_order_rc_fabric_count || "",
+      work_order_rc_remarks: workOrder.work_order_rc_remarks || "",
       workorder_sub_rc_data: workorder_sub_rc_data,
       work_order_rc_count: Object.keys(groupedBoxes).length,
     };
@@ -366,56 +439,42 @@ const DcReceiptReceived = () => {
     updateOrderReceivedMutation.mutate(submissionData);
   };
 
-  const splitBarcodeData = (data) => {
-    if (!data) return <div className="text-gray-500 italic">No barcodes</div>;
-    
-    const barcodes = data.split(",").map((b) => b.trim()).filter(b => b);
-    
-    if (barcodes.length === 0) {
-      return <div className="text-gray-500 italic">No barcodes</div>;
-    }
-
-    const barcodeCounts = {};
-    barcodes.forEach(barcode => {
-      barcodeCounts[barcode] = (barcodeCounts[barcode] || 0) + 1;
-    });
-
-    return (
-      <div className="flex flex-wrap gap-1">
-        {Object.entries(barcodeCounts).map(([barcode, count], index) => (
-          <span key={index} className="inline-flex items-center bg-gray-100 px-2 py-1 rounded text-sm">
-            {barcode}
-            {count > 1 && (
-              <span className="ml-1 text-gray-600">(×{count})</span>
-            )}
-          </span>
-        ))}
-      </div>
-    );
-  };
-
-  // Calculate duplicates for the selected box
   const calculateBoxDuplicates = (barcodes) => {
     const duplicates = {};
-    barcodes.forEach(barcode => {
+    barcodes.forEach((barcode) => {
       duplicates[barcode] = (duplicates[barcode] || 0) + 1;
     });
     return duplicates;
   };
 
-  // Get matching status between original and current barcodes
   const getBarcodeMatchStatus = (barcode) => {
-    if (!selectedBox) return 'missing';
-    
-    const originalCount = selectedBox.originalBarcodes.filter(b => b === barcode).length;
-    const currentCount = selectedBox.currentBarcodes.filter(b => b === barcode).length;
-    
-    if (currentCount === 0) return 'missing';
-    if (currentCount === originalCount) return 'matched';
-    if (currentCount > originalCount) return 'extra';
-    if (currentCount < originalCount) return 'partial';
-    
-    return 'matched';
+    if (!selectedBox) return "missing";
+
+    const originalCount = selectedBox.originalBarcodes.filter(
+      (b) => b === barcode,
+    ).length;
+    const currentCount = selectedBox.currentBarcodes.filter(
+      (b) => b === barcode,
+    ).length;
+
+    if (currentCount === 0) return "missing";
+    if (currentCount === originalCount) return "matched";
+    if (currentCount > originalCount) return "extra";
+    if (currentCount < originalCount) return "partial";
+
+    return "matched";
+  };
+
+  const toggleBox = (box) => {
+    setCheckedBoxes((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(box)) {
+        newSet.delete(box);
+      } else {
+        newSet.add(box);
+      }
+      return newSet;
+    });
   };
 
   if (isLoading) {
@@ -430,85 +489,6 @@ const DcReceiptReceived = () => {
       />
     );
   }
-
-  const { workOrder, workOrderSub } = data;
-
-  const groupedBoxes = workOrderSub.reduce((acc, item) => {
-    const boxNumber = item.work_order_rc_sub_box;
-    if (!acc[boxNumber]) {
-      acc[boxNumber] = {
-        barcodes: [],
-        totalPcs: 0,
-      };
-    }
-    
-    if (item.work_order_rc_sub_barcode) {
-      const barcodes = item.work_order_rc_sub_barcode.split(',').filter(b => b.trim());
-      acc[boxNumber].barcodes.push(...barcodes);
-      acc[boxNumber].totalPcs += barcodes.length;
-    }
-    
-    return acc;
-  }, {});
-
-  // Render box content dynamically
-  const renderDynamicBoxContent = () => {
-    return Object.entries(groupedBoxes).map(([boxNumber, boxData], index) =>
-      renderBoxContent(
-        boxNumber,
-        boxData.totalPcs,
-        boxData.barcodes.join(","),
-        boxData,
-        index
-      )
-    );
-  };
-
-  // Render box content with barcode
-  const renderBoxContent = (boxNumber, totalPcs, barcodeData, boxData, index) => {
-    const formattedBoxNumber = formatBoxNumber(boxNumber);
-    
-    return (
-      <div key={`box-${boxNumber}-${index}`} className="mb-4 break-inside-avoid">
-        <div className="border flex flex-col border-black p-3">
-          <div className="flex flex-row items-start justify-between gap-5">
-            <div className="flex flex-col items-center">
-              <Barcode
-                value={formattedBoxNumber}
-                width={1.5}
-                height={55}
-                fontSize={14}
-                margin={0}
-                displayValue={true}
-                format="CODE128"
-                background="transparent"
-                lineColor="#000000"
-              />
-              <div className="text-center mt-1 ">
-                <span className="text-sm font-semibold">Box: {formattedBoxNumber}</span>
-                <span className="mx-2">/</span>
-                <span className="text-sm">Total Pcs: {totalPcs}</span>
-              </div>
-            </div>
-
-            <div className="mt-2 flex-1">
-              <div className="text-xs font-medium mb-1">Item Barcodes:</div>
-              {splitBarcodeData(barcodeData)}
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate(`/order-received/edit-order-received/${id}`)}
-              className="h-8 w-8 p-0"
-            >
-              <BarcodeIcon className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <Page>
@@ -549,8 +529,32 @@ const DcReceiptReceived = () => {
 
           <CardContent className="p-4">
             <div ref={componentRef} className="bg-white rounded-lg print:p-4">
-              {/* Main Details Table with Single Border */}
-              <table className="w-full mb-1 border-collapse text-sm">
+              <style>{`
+                @media print {
+                  .print-hidden-custom {
+                    display: none !important;
+                  }
+                  .print-visible-table-custom {
+                    display: table !important;
+                  }
+                  .print-box-container {
+                    display: block !important;
+                    break-inside: avoid !important;
+                    page-break-inside: avoid !important;
+                  }
+                  .print-page-break {
+                    break-after: page !important;
+                    page-break-after: always !important;
+                  }
+                }
+                @media screen {
+                  .print-visible-table-custom {
+                    display: none !important;
+                  }
+                }
+              `}</style>
+              {/* Header Table - hidden when printing since each box will print its own header */}
+              <table className="w-full mb-4 border-collapse text-sm print-hidden-custom">
                 <tbody>
                   <tr className="border-t border-l border-r border-black">
                     <td className="font-semibold p-1 w-[8rem] border-r">
@@ -565,7 +569,7 @@ const DcReceiptReceived = () => {
                     <td className="p-1 w-[8rem]">
                       :{" "}
                       {moment(workOrder.work_order_rc_date).format(
-                        "DD-MM-YYYY"
+                        "DD-MM-YYYY",
                       )}
                     </td>
                   </tr>
@@ -588,7 +592,7 @@ const DcReceiptReceived = () => {
                     <td className="p-1 w-[8rem]">
                       :{" "}
                       {moment(workOrder.work_order_rc_dc_date).format(
-                        "DD-MM-YYYY"
+                        "DD-MM-YYYY",
                       )}
                     </td>
                   </tr>
@@ -628,14 +632,201 @@ const DcReceiptReceived = () => {
                   </tr>
                 </tbody>
               </table>
-           
-              <div className="mt-4 space-y-4">{renderDynamicBoxContent()}</div>
+
+              {/* Table grouped by box – all boxes visible on screen, only checked printed */}
+              <div className="mt-4 space-y-6">
+                {sortedBoxes.map((box) => {
+                  const isChecked = checkedBoxes.has(box);
+                  const rows = groupedRows[box];
+                  const boxData = groupedBoxesForDialog[box] || {
+                    barcodes: [],
+                    totalPcs: 0,
+                  };
+                  const totalAmount = rows.reduce(
+                    (sum, row) =>
+                      sum + (parseFloat(row.amount) || 0) * row.quantity,
+                    0,
+                  );
+                  // Determine if this is the last checked box to avoid a trailing blank page when printing
+                  const checkedBoxesArray = sortedBoxes.filter((b) =>
+                    checkedBoxes.has(b),
+                  );
+                  const isLastChecked =
+                    checkedBoxesArray[checkedBoxesArray.length - 1] === box;
+
+                  return (
+                    <React.Fragment key={`box-frag-${box}`}>
+                      <div
+                        className={`border border-black p-3 ${
+                          isChecked
+                            ? "print-box-container"
+                            : "print-hidden-custom"
+                        }`}
+                      >
+                        {/* Header Table for print only - shows before every box */}
+                        <table className="w-full mb-4 border-collapse text-sm print-visible-table-custom">
+                          <tbody>
+                            <tr className="border-t border-l border-r border-black">
+                              <td className="font-semibold p-1 w-[8rem] border-r">
+                                Factory
+                              </td>
+                              <td className="p-1 w-[16rem] border-r">
+                                : {workOrder.work_order_rc_factory}
+                              </td>
+                              <td className="font-semibold p-1 w-[6rem] text-right border-r">
+                                Date
+                              </td>
+                              <td className="p-1 w-[8rem]">
+                                :{" "}
+                                {moment(workOrder.work_order_rc_date).format(
+                                  "DD-MM-YYYY",
+                                )}
+                              </td>
+                            </tr>
+                            <tr className="border-l border-r border-black">
+                              <td className="font-semibold p-1 w-[8rem] border-r">
+                                Brand
+                              </td>
+                              <td className="p-1 w-[16rem] border-r">
+                                : {workOrder.work_order_rc_brand}
+                              </td>
+                              <td className="font-semibold p-1 w-[6rem] text-right border-r">
+                                DC No
+                              </td>
+                              <td className="p-1 w-[8rem]">
+                                : {workOrder.work_order_rc_dc_no}
+                              </td>
+                              <td className="font-semibold p-1 w-[6rem] text-right border-r">
+                                DC Date
+                              </td>
+                              <td className="p-1 w-[8rem]">
+                                :{" "}
+                                {moment(workOrder.work_order_rc_dc_date).format(
+                                  "DD-MM-YYYY",
+                                )}
+                              </td>
+                            </tr>
+                            <tr className="border-l border-r border-black">
+                              <td className="font-semibold p-1 w-[8rem] border-r">
+                                No of Box
+                              </td>
+                              <td className="p-1 w-[16rem] border-r">
+                                : {workOrder.work_order_rc_box}
+                              </td>
+                              <td className="font-semibold p-1 w-[6rem] text-right border-r">
+                                Total Pcs
+                              </td>
+                              <td className="p-1 w-[8rem]">
+                                : {workOrder.work_order_rc_pcs}
+                              </td>
+                              <td className="font-semibold p-1 w-[6rem] text-right border-r">
+                                Received By
+                              </td>
+                              <td className="p-1 w-[8rem]">
+                                : {workOrder.work_order_rc_received_by}
+                              </td>
+                            </tr>
+                            <tr className="border-l border-r border-b border-black">
+                              <td className="font-semibold p-1 w-[8rem] border-r">
+                                Work Order No
+                              </td>
+                              <td className="p-1 w-[16rem] border-r">
+                                : {workOrder.work_order_rc_id}
+                              </td>
+                              <td className="font-semibold p-1 w-[6rem] text-right border-r">
+                                Remarks
+                              </td>
+                              <td colSpan="3" className="p-1 break-words">
+                                : {workOrder.work_order_rc_remarks}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+
+                        <div className="flex justify-between items-center mb-2">
+                          <div className="flex items-center gap-2">
+                            {/* Checkbox – hidden when printing */}
+                            <div className="print-hidden-custom">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => toggleBox(box)}
+                                className="w-4 h-4"
+                              />
+                            </div>
+                            <h3 className="text-lg font-semibold">
+                              Box (Total Pcs: {boxData.totalPcs})
+                            </h3>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold">
+                              Total Amount: ₹{totalAmount.toFixed(2)}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                navigate(
+                                  `/order-received/edit-order-received/${id}`,
+                                )
+                              }
+                              className="h-8 w-8 p-0 print-hidden-custom"
+                            >
+                              <BarcodeIcon className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <table className="w-full border-collapse border border-black text-sm">
+                          <thead>
+                            <tr className="bg-gray-100">
+                              <th className="border border-black p-1 text-left">
+                                Barcode
+                              </th>
+                              <th className="border border-black p-1 text-left">
+                                Size
+                              </th>
+                              <th className="border border-black p-1 text-left">
+                                Amount (₹)
+                              </th>
+                              <th className="border border-black p-1 text-right">
+                                Quantity
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {rows.map((row, idx) => (
+                              <tr key={idx}>
+                                <td className="border border-black p-1">
+                                  {row.barcode}
+                                </td>
+                                <td className="border border-black p-1">
+                                  {row.size}
+                                </td>
+                                <td className="border border-black p-1">
+                                  {row.amount}
+                                </td>
+                                <td className="border border-black p-1 text-right">
+                                  {row.quantity}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {/* Page break element - only in print, between boxes */}
+                      {/* {isChecked && !isLastChecked && (
+                        <div className="print-page-break" />
+                      )} */}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-     
+      {/* Barcode Dialog */}
       <Dialog open={barcodeDialogOpen} onOpenChange={setBarcodeDialogOpen}>
         <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
           <DialogHeader>
@@ -643,30 +834,51 @@ const DcReceiptReceived = () => {
               Barcode Management - Box {selectedBox?.boxNumber}
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="flex-1 grid grid-cols-2 gap-6 overflow-hidden">
-           
             <div className="border rounded-lg p-4 flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Original Barcodes</h3>
                 <div className="text-sm">
-                  <span className="font-semibold">Box: {selectedBox && formatBoxNumber(selectedBox.boxNumber)}</span>
+                  <span className="font-semibold">
+                    Box: {selectedBox && formatBoxNumber(selectedBox.boxNumber)}
+                  </span>
                   <span className="mx-2">/</span>
                   <span>Total Pcs: {selectedBox?.originalBarcodes.length}</span>
                 </div>
               </div>
-              
+
               <div className="flex-1 overflow-y-auto">
                 <div className="space-y-2">
                   {selectedBox?.originalBarcodes.map((barcode, index) => {
                     const matchStatus = getBarcodeMatchStatus(barcode);
                     const statusConfig = {
-                      matched: { bg: 'bg-green-100', border: 'border-green-500', text: 'text-green-800', icon: CheckCircle },
-                      partial: { bg: 'bg-yellow-100', border: 'border-yellow-500', text: 'text-yellow-800', icon: CheckCircle },
-                      extra: { bg: 'bg-orange-100', border: 'border-orange-500', text: 'text-orange-800', icon: XCircle },
-                      missing: { bg: 'bg-red-100', border: 'border-red-500', text: 'text-red-800', icon: XCircle }
+                      matched: {
+                        bg: "bg-green-100",
+                        border: "border-green-500",
+                        text: "text-green-800",
+                        icon: CheckCircle,
+                      },
+                      partial: {
+                        bg: "bg-yellow-100",
+                        border: "border-yellow-500",
+                        text: "text-yellow-800",
+                        icon: CheckCircle,
+                      },
+                      extra: {
+                        bg: "bg-orange-100",
+                        border: "border-orange-500",
+                        text: "text-orange-800",
+                        icon: XCircle,
+                      },
+                      missing: {
+                        bg: "bg-red-100",
+                        border: "border-red-500",
+                        text: "text-red-800",
+                        icon: XCircle,
+                      },
                     };
-                    
+
                     const config = statusConfig[matchStatus];
                     const StatusIcon = config.icon;
 
@@ -678,9 +890,13 @@ const DcReceiptReceived = () => {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <StatusIcon className="h-4 w-4" />
-                            <span>{index + 1}. {barcode}</span>
+                            <span>
+                              {index + 1}. {barcode}
+                            </span>
                           </div>
-                          <span className={`text-xs px-2 py-1 rounded capitalize ${config.bg} ${config.text}`}>
+                          <span
+                            className={`text-xs px-2 py-1 rounded capitalize ${config.bg} ${config.text}`}
+                          >
                             {matchStatus}
                           </span>
                         </div>
@@ -691,29 +907,36 @@ const DcReceiptReceived = () => {
               </div>
             </div>
 
-  
             <div className="border rounded-lg p-4 flex flex-col">
-              <h3 className="text-lg font-semibold mb-4">Scan & Add Barcodes</h3>
-              
-       
+              <h3 className="text-lg font-semibold mb-4">
+                Scan & Add Barcodes
+              </h3>
+
               {validationStatus && (
-                <div className={`p-3 rounded mb-4 ${
-                  validationStatus.type === 'success' 
-                    ? 'bg-green-100 border border-green-500 text-green-800' 
-                    : validationStatus.type === 'error'
-                    ? 'bg-red-100 border border-red-500 text-red-800'
-                    : 'bg-blue-100 border border-blue-500 text-blue-800'
-                }`}>
+                <div
+                  className={`p-3 rounded mb-4 ${
+                    validationStatus.type === "success"
+                      ? "bg-green-100 border border-green-500 text-green-800"
+                      : validationStatus.type === "error"
+                        ? "bg-red-100 border border-red-500 text-red-800"
+                        : "bg-blue-100 border border-blue-500 text-blue-800"
+                  }`}
+                >
                   <div className="flex items-center gap-2">
-                    {validationStatus.type === 'success' && <CheckCircle className="h-4 w-4" />}
-                    {validationStatus.type === 'error' && <XCircle className="h-4 w-4" />}
-                    {validationStatus.type === 'validating' && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {validationStatus.type === "success" && (
+                      <CheckCircle className="h-4 w-4" />
+                    )}
+                    {validationStatus.type === "error" && (
+                      <XCircle className="h-4 w-4" />
+                    )}
+                    {validationStatus.type === "validating" && (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    )}
                     <span className="text-sm">{validationStatus.message}</span>
                   </div>
                 </div>
               )}
 
-         
               <div className="flex gap-2 mb-4">
                 <Input
                   value={currentInputValue}
@@ -726,7 +949,10 @@ const DcReceiptReceived = () => {
                 />
                 <Button
                   onClick={addBarcodeToBox}
-                  disabled={!currentInputValue.trim() || loadingStates[selectedBox?.boxNumber]}
+                  disabled={
+                    !currentInputValue.trim() ||
+                    loadingStates[selectedBox?.boxNumber]
+                  }
                   size="sm"
                 >
                   {loadingStates[selectedBox?.boxNumber] ? (
@@ -737,84 +963,103 @@ const DcReceiptReceived = () => {
                 </Button>
               </div>
 
-           
               <div className="flex-1 overflow-y-auto">
                 {selectedBox?.currentBarcodes.length > 0 ? (
                   <div className="grid grid-cols-1 gap-2">
-                    {selectedBox.currentBarcodes.map((barcode, barcodeIndex) => {
-                      const duplicates = calculateBoxDuplicates(selectedBox.currentBarcodes);
-                      const isDuplicate = duplicates[barcode] > 1;
-                      const matchStatus = getBarcodeMatchStatus(barcode);
-                      
-                      return (
-                        <div
-                          key={`current-${barcode}-${barcodeIndex}`}
-                          className={`bg-white p-2 rounded border text-sm flex items-center justify-between ${
-                            isDuplicate ? 'border-amber-300 bg-amber-50' : 'border-gray-200'
-                          }`}
-                        >
-                          <div className="flex items-center min-w-0 flex-1">
-                            <span className="text-gray-500 mr-2 w-6 text-right shrink-0">
-                              {barcodeIndex + 1}.
-                            </span>
-                            <span className="font-mono truncate" title={barcode}>
-                              {barcode}
-                            </span>
-                            {isDuplicate && (
-                              <span className="ml-2 text-xs text-amber-600 bg-amber-100 px-2 py-1 rounded">
-                                Duplicate
-                              </span>
-                            )}
-                            <span className={`ml-2 text-xs px-2 py-1 rounded capitalize ${
-                              matchStatus === 'matched' ? 'bg-green-100 text-green-800' :
-                              matchStatus === 'partial' ? 'bg-yellow-100 text-yellow-800' :
-                              matchStatus === 'extra' ? 'bg-orange-100 text-orange-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {matchStatus}
-                            </span>
-                          </div>
+                    {selectedBox.currentBarcodes.map(
+                      (barcode, barcodeIndex) => {
+                        const duplicates = calculateBoxDuplicates(
+                          selectedBox.currentBarcodes,
+                        );
+                        const isDuplicate = duplicates[barcode] > 1;
+                        const matchStatus = getBarcodeMatchStatus(barcode);
 
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            type="button"
-                            onClick={() => removeBarcode(barcodeIndex)}
-                            className="h-6 w-6 hover:bg-red-100 text-red-500 shrink-0"
+                        return (
+                          <div
+                            key={`current-${barcode}-${barcodeIndex}`}
+                            className={`bg-white p-2 rounded border text-sm flex items-center justify-between ${
+                              isDuplicate
+                                ? "border-amber-300 bg-amber-50"
+                                : "border-gray-200"
+                            }`}
                           >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      );
-                    })}
+                            <div className="flex items-center min-w-0 flex-1">
+                              <span className="text-gray-500 mr-2 w-6 text-right shrink-0">
+                                {barcodeIndex + 1}.
+                              </span>
+                              <span
+                                className="font-mono truncate"
+                                title={barcode}
+                              >
+                                {barcode}
+                              </span>
+                              {isDuplicate && (
+                                <span className="ml-2 text-xs text-amber-600 bg-amber-100 px-2 py-1 rounded">
+                                  Duplicate
+                                </span>
+                              )}
+                              <span
+                                className={`ml-2 text-xs px-2 py-1 rounded capitalize ${
+                                  matchStatus === "matched"
+                                    ? "bg-green-100 text-green-800"
+                                    : matchStatus === "partial"
+                                      ? "bg-yellow-100 text-yellow-800"
+                                      : matchStatus === "extra"
+                                        ? "bg-orange-100 text-orange-800"
+                                        : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                {matchStatus}
+                              </span>
+                            </div>
+
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              type="button"
+                              onClick={() => removeBarcode(barcodeIndex)}
+                              className="h-6 w-6 hover:bg-red-100 text-red-500 shrink-0"
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        );
+                      },
+                    )}
                   </div>
                 ) : (
                   <p className="text-sm text-gray-500 italic text-center py-8">
                     No barcodes added yet
                   </p>
                 )}
-                
-      
-                {selectedBox && (() => {
-                  const duplicates = calculateBoxDuplicates(selectedBox.currentBarcodes);
-                  const duplicateEntries = Object.entries(duplicates).filter(([_, count]) => count > 1);
-                  
-                  if (duplicateEntries.length > 0) {
-                    return (
-                      <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded text-xs">
-                        <div className="font-medium text-amber-800 mb-1">Duplicates Detected:</div>
-                        <div className="text-amber-700">
-                          {duplicateEntries.map(([barcode, count]) => (
-                            <span key={barcode} className="mr-2">
-                              {barcode} × {count}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
+
+                {selectedBox &&
+                  (() => {
+                    const duplicates = calculateBoxDuplicates(
+                      selectedBox.currentBarcodes,
                     );
-                  }
-                  return null;
-                })()}
+                    const duplicateEntries = Object.entries(duplicates).filter(
+                      ([_, count]) => count > 1,
+                    );
+
+                    if (duplicateEntries.length > 0) {
+                      return (
+                        <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded text-xs">
+                          <div className="font-medium text-amber-800 mb-1">
+                            Duplicates Detected:
+                          </div>
+                          <div className="text-amber-700">
+                            {duplicateEntries.map(([barcode, count]) => (
+                              <span key={barcode} className="mr-2">
+                                {barcode} × {count}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
               </div>
             </div>
           </div>
@@ -842,7 +1087,6 @@ const DcReceiptReceived = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
 
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
