@@ -353,7 +353,7 @@ const FactoryOrderReceived = () => {
   const handleScannerScan = (value) => {
     if (activeInputIndex === null && activeInputIndex !== 0) return;
     addBarcodeToBox(activeInputIndex, value);
-    setIsScannerOpen(false);
+    // setIsScannerOpen(false);
   };
 
   // ---------- Derived values ----------

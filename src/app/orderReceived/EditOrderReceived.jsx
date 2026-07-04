@@ -568,7 +568,7 @@ const EditOrderReceived = () => {
       return;
     }
     addBarcodeToBox(activeInputIndex, value);
-    setIsScannerOpen(false);
+    // setIsScannerOpen(false);
   };
 
   if (isFetching) {
