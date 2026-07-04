@@ -25,12 +25,14 @@ const ScannerModel = ({ barcodeScannerValue }) => {
   const scannerStyles = {
     container: {
       width: "100%",
-      maxWidth: "640px", // For desktop screens
+      maxWidth: "280px", // Compact size for mobile
       height: "auto",
     },
     video: {
       width: "100%",
       height: "auto",
+      maxHeight: "220px",
+      objectFit: "cover",
     },
   };
   return (
@@ -39,7 +41,7 @@ const ScannerModel = ({ barcodeScannerValue }) => {
         formats={barcodeFormats}
         onScan={handleScan}
         onError={(error) => console.error(error)}
-        className="w-full max-w-lg"
+        className="w-full max-w-xs"
         styles={scannerStyles}
       />
     </div>

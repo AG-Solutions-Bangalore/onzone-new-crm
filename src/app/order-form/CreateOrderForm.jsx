@@ -1167,14 +1167,14 @@ const CreateOrderForm = () => {
 
       {/* mobile scanner  */}
       <Dialog open={showScanner} onOpenChange={setShowScanner}>
-        <DialogContent className="max-w-md p-0 overflow-hidden">
+        <DialogContent className="max-w-xs w-[92vw] p-0 overflow-hidden">
           <DialogHeader className="px-4 pt-4">
             <DialogTitle>Scan Barcode</DialogTitle>
             <DialogDescription>
               Point your camera at a barcode to scan
             </DialogDescription>
           </DialogHeader>
-          <div className="h-64 relative">
+          <div className="h-48 relative">
             <Scanner
               onScan={(detectedCodes) => {
                 if (detectedCodes && detectedCodes.length > 0) {
@@ -1213,9 +1213,13 @@ const CreateOrderForm = () => {
                 container: {
                   borderRadius: "8px",
                   overflow: "hidden",
+                  width: "100%",
+                  maxWidth: "280px",
+                  margin: "0 auto",
                 },
                 video: {
                   objectFit: "cover",
+                  maxHeight: "192px",
                 },
               }}
             />

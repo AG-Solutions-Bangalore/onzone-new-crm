@@ -112,7 +112,7 @@ const DcReceiptReceived = () => {
       aggregated[key].quantity += 1;
     });
 
-    return Object.values(aggregated);
+      return Object.values(aggregated);
   }, [workOrderSub]);
 
   // Group by box for rendering
@@ -142,7 +142,6 @@ const DcReceiptReceived = () => {
         acc[boxNumber].barcodes.push(...barcodes);
         acc[boxNumber].totalPcs += barcodes.length;
       }
-
       return acc;
     }, {});
   }, [workOrderSub]);
@@ -387,7 +386,6 @@ const DcReceiptReceived = () => {
 
   const updateBoxBarcodes = () => {
     if (!selectedBox) return;
-
     const groupedBoxes = workOrderSub.reduce((acc, item) => {
       const boxNumber = item.work_order_rc_sub_box;
       if (!acc[boxNumber]) {
@@ -395,7 +393,6 @@ const DcReceiptReceived = () => {
           barcodes: [],
         };
       }
-
       if (boxNumber === selectedBox.boxNumber) {
         acc[boxNumber].barcodes = [...new Set(selectedBox.currentBarcodes)];
       } else {
