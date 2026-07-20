@@ -885,9 +885,8 @@ const EditOrderReceived = () => {
                                       index,
                                     );
                                   }}
-                                  placeholder="6-digit barcode"
+                                  placeholder="Enter barcode digit"
                                   className="h-8 text-xs p-1 uppercase bg-blue-200 text-black"
-                                  maxLength={6}
                                 />
 
                                 {/* Camera/Scanner button */}

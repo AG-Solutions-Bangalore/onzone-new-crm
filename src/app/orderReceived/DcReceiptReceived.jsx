@@ -112,7 +112,7 @@ const DcReceiptReceived = () => {
       aggregated[key].quantity += 1;
     });
 
-      return Object.values(aggregated);
+    return Object.values(aggregated);
   }, [workOrderSub]);
 
   // Group by box for rendering
@@ -510,17 +510,20 @@ const DcReceiptReceived = () => {
                   </div>
                 </Button>
               )}
-              <ReactToPrint
-                trigger={() => (
-                  <Button variant="outline" size="sm" asChild>
-                    <div className="flex items-center gap-2 cursor-pointer">
-                      <Printer className="h-4 w-4" />
-                      Print
-                    </div>
-                  </Button>
-                )}
-                content={() => componentRef.current}
-              />
+
+              <div className={checkedBoxes.size > 0 ? "visible" : "invisible"}>
+                <ReactToPrint
+                  trigger={() => (
+                    <Button variant="outline" size="sm" asChild>
+                      <div className="flex items-center gap-2 cursor-pointer">
+                        <Printer className="h-4 w-4" />
+                        Print
+                      </div>
+                    </Button>
+                  )}
+                  content={() => componentRef.current}
+                />
+              </div>
             </div>
           </CardHeader>
 
@@ -939,9 +942,8 @@ const DcReceiptReceived = () => {
                   value={currentInputValue}
                   onChange={handleBarcodeInputChange}
                   onKeyPress={handleKeyPress}
-                  placeholder="Enter 6-digit barcode"
+                  placeholder="Enter barcode digit"
                   className="flex-1 uppercase font-mono"
-                  maxLength={6}
                   disabled={loadingStates[selectedBox?.boxNumber]}
                 />
                 <Button
