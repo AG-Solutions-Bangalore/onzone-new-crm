@@ -578,7 +578,6 @@ const FactoryOrderReceived = () => {
                                   }}
                                   placeholder="6-digit barcode"
                                   className="h-8 text-xs p-1 uppercase bg-blue-200 text-black"
-                                  maxLength={6}
                                 />
 
                                 <Button

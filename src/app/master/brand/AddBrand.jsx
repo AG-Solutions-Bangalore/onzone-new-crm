@@ -35,7 +35,6 @@ const AddBrand = () => {
     const { name, value } = e.target;
 
     if (name === "fabric_brand_brands") {
-     
       if (/^[A-Za-z ]*$/.test(value)) {
         setFormData((prev) => ({
           ...prev,
@@ -43,7 +42,6 @@ const AddBrand = () => {
         }));
       }
     } else if (name === "fabric_brand_short") {
-    
       if (/^[a-zA-Z0-9]{0,2}$/.test(value)) {
         setFormData((prev) => ({
           ...prev,
@@ -111,8 +109,7 @@ const AddBrand = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description:
-        error.response?.data?.message || "Failed to create brand",
+        description: error.response?.data?.message || "Failed to create brand",
         variant: "destructive",
       });
     } finally {
@@ -192,7 +189,7 @@ const AddBrand = () => {
           <Button
             onClick={handleSubmit}
             disabled={isLoading}
-             className={`mt-2 ${ButtonConfig.backgroundColor} ${ButtonConfig.hoverBackgroundColor} ${ButtonConfig.textColor}`}
+            className={`mt-2 ${ButtonConfig.backgroundColor} ${ButtonConfig.hoverBackgroundColor} ${ButtonConfig.textColor}`}
           >
             {isLoading ? (
               <>

@@ -462,10 +462,9 @@ const CreateSales = () => {
                         target: { value: pastedText },
                       });
                     }}
-                    placeholder="Enter 6-digit barcode"
+                    placeholder="Enter  barcode digit"
                     className="h-8 text-xs p-1 uppercase"
                     disabled={isInputDisabled()}
-                    maxLength={6}
                   />
 
                   <Button

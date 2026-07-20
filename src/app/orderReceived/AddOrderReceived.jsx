@@ -925,10 +925,9 @@ const AddOrderReceived = () => {
                                   index,
                                 );
                               }}
-                              placeholder="6-digit barcode"
+                              placeholder="Enter barcode digit"
                               className="h-8 text-xs p-1 uppercase bg-blue-200 text-black"
                               disabled={isInputDisabled(index)}
-                              maxLength={6}
                             />
 
                             <Button
