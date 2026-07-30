@@ -3,10 +3,11 @@ import Page from "../dashboard/page";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import moment from "moment";
+import * as XLSX from "xlsx";
 import ReactToPrint from "react-to-print";
 import {
   Printer,
-  BarcodeIcon,
+  Download,
   Plus,
   Minus,
   Loader2,
@@ -41,7 +42,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import BASE_URL from "@/config/BaseUrl";
-import Barcode from "react-barcode";
 
 const DcReceiptReceived = () => {
   const { id } = useParams();
@@ -80,6 +80,7 @@ const DcReceiptReceived = () => {
   });
 
   const { workOrder = {}, workOrderSub = [] } = data || {};
+
 
   // --- Build table rows (aggregated by box, barcode, size, rate) ---
   const tableRows = useMemo(() => {
@@ -152,8 +153,6 @@ const DcReceiptReceived = () => {
     [groupedRows],
   );
 
-  // Checkboxes are kept unchecked by default on load as per requirements
-
   const generateFactoryCode = (factoryName) => {
     if (!factoryName) return "";
     return factoryName
@@ -166,6 +165,150 @@ const DcReceiptReceived = () => {
     const factoryCode = generateFactoryCode(workOrder.work_order_rc_factory);
     return `${factoryCode}${id}${boxNumber}`;
   };
+
+  // ----- Excel Download Function -----
+  const downloadExcel = () => {
+    const selectedBoxes = [...checkedBoxes];
+
+    if (selectedBoxes.length === 0) {
+      toast({
+        title: "Info",
+        description: "Please select at least one box to export.",
+        variant: "default",
+      });
+      return;
+    }
+
+    const filteredRows = tableRows.filter((row) =>
+      selectedBoxes.includes(row.box),
+    );
+
+    if (filteredRows.length === 0) {
+      toast({
+        title: "Info",
+        description: "No data found for selected boxes.",
+        variant: "default",
+      });
+      return;
+    }
+
+    const selectedBoxData = selectedBoxes
+      .map((box) => groupedBoxesForDialog[box])
+      .filter(Boolean);
+    const totalBoxes = selectedBoxes.length;
+    const totalPcs = selectedBoxData.reduce(
+      (sum, box) => sum + box.totalPcs,
+      0,
+    );
+
+    // Prepare array of arrays (worksheet data)
+    const wsData = [];
+
+    // TITLE
+    wsData.push(["DC RECEIPT"]);
+    wsData.push([]);
+
+    // SUMMARY
+    wsData.push(["SUMMARY"]);
+
+    // Factory name as title (without "Factory" label)
+    const factoryName = workOrder.work_order_rc_factory || "";
+
+    // Two‑column summary – Work Order No on the right
+    const leftFields = [
+      [factoryName],
+      ["Brand", workOrder.work_order_rc_brand || ""],
+      ["Date", moment(workOrder.work_order_rc_date).format("DD-MM-YYYY")],
+    ];
+    const rightFields = [
+      ["Work Order No", workOrder.work_order_rc_id || ""],
+
+      ["No of Box", totalBoxes.toString()],
+      ["Total Pcs", totalPcs.toString()],
+    ];
+    const maxRows = Math.max(leftFields.length, rightFields.length);
+
+    for (let i = 0; i < maxRows; i++) {
+      const left = leftFields[i] || ["", ""];
+      const right = rightFields[i] || ["", ""];
+      wsData.push([left[0], left[1], "", right[0], right[1]]);
+    }
+
+    // BLANK ROW BEFORE DETAILS
+    wsData.push([]);
+    wsData.push(["DETAILS"]);
+    wsData.push([]);
+
+    // DETAILS – grouped by box
+    const grouped = filteredRows.reduce((acc, row) => {
+      if (!acc[row.box]) acc[row.box] = [];
+      acc[row.box].push(row);
+      return acc;
+    }, {});
+
+    const sortedBoxesSelected = Object.keys(grouped).sort(
+      (a, b) => Number(a) - Number(b),
+    );
+
+    // Keep track of row indices for styling box headers
+    const styleMap = {};
+
+    sortedBoxesSelected.forEach((box, index) => {
+      const headerRowIndex = wsData.length;
+      wsData.push([`Box ${box}`]); // This cell will be styled
+      styleMap[headerRowIndex] = { bold: true, fontSize: 14 };
+
+      wsData.push(["Barcode", "Size", "MRP", "Quantity"]);
+      grouped[box].forEach((row) => {
+        wsData.push([row.barcode, row.size, row.amount, row.quantity]);
+      });
+
+      if (index < sortedBoxesSelected.length - 1) {
+        wsData.push([]); // blank row as separator
+      }
+    });
+
+    // Create worksheet from the array data
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Set column widths
+    ws["!cols"] = [
+      { wch: 18 }, // Key / Barcode
+      { wch: 22 }, // Value / Size
+      { wch: 5 }, // Spacer
+      { wch: 18 }, // Right key
+      { wch: 22 }, // Right value
+    ];
+
+    // --- Apply styling to box headers ---
+    const range = XLSX.utils.decode_range(ws["!ref"]);
+    for (let r = range.s.r; r <= range.e.r; r++) {
+      if (styleMap[r]) {
+        const cellAddress = XLSX.utils.encode_cell({ r: r, c: 0 });
+        if (ws[cellAddress]) {
+          if (!ws[cellAddress].s) ws[cellAddress].s = {};
+          ws[cellAddress].s.font = {
+            bold: true,
+            sz: 24, // font size 14
+          };
+        }
+      }
+    }
+
+    // Increase row height for those header rows
+    if (!ws["!rows"]) ws["!rows"] = [];
+    Object.keys(styleMap).forEach((rowIdx) => {
+      ws["!rows"][parseInt(rowIdx)] = { hpt: 26 }; // 26 points tall
+    });
+
+    // Create workbook and save
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "DC Receipt");
+
+    const fileName = `Packing${workOrder.work_order_rc_id}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+  };
+  // ---------------------------------
 
   const updateMutation = useMutation({
     mutationFn: async (workOrderId) => {
@@ -496,33 +639,50 @@ const DcReceiptReceived = () => {
               <CardTitle className="text-lg font-semibold">
                 Dc Receipt
               </CardTitle>
-              {orderReceivedStatus?.toLowerCase() !== "received" && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setDeleteWorkOrderId(id);
-                    setDeleteConfirmOpen(true);
-                  }}
-                >
-                  <div className="flex items-center gap-2 cursor-pointer">
-                    All Received
-                  </div>
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {orderReceivedStatus?.toLowerCase() !== "received" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setDeleteWorkOrderId(id);
+                      setDeleteConfirmOpen(true);
+                    }}
+                  >
+                    <div className="flex items-center gap-2 cursor-pointer">
+                      All Received
+                    </div>
+                  </Button>
+                )}
 
-              <div className={checkedBoxes.size > 0 ? "visible" : "invisible"}>
-                <ReactToPrint
-                  trigger={() => (
-                    <Button variant="outline" size="sm" asChild>
-                      <div className="flex items-center gap-2 cursor-pointer">
-                        <Printer className="h-4 w-4" />
-                        Print
-                      </div>
-                    </Button>
-                  )}
-                  content={() => componentRef.current}
-                />
+                {/* Excel Download Button */}
+                <div
+                  className={checkedBoxes.size > 0 ? "visible" : "invisible"}
+                >
+                  <Button variant="outline" size="sm" onClick={downloadExcel}>
+                    <div className="flex items-center gap-2 cursor-pointer">
+                      <Download className="h-4 w-4" />
+                      Excel
+                    </div>
+                  </Button>
+                </div>
+
+                {/* Print Button - visible only when at least one box is checked */}
+                <div
+                  className={checkedBoxes.size > 0 ? "visible" : "invisible"}
+                >
+                  <ReactToPrint
+                    trigger={() => (
+                      <Button variant="outline" size="sm" asChild>
+                        <div className="flex items-center gap-2 cursor-pointer">
+                          <Printer className="h-4 w-4" />
+                          Print
+                        </div>
+                      </Button>
+                    )}
+                    content={() => componentRef.current}
+                  />
+                </div>
               </div>
             </div>
           </CardHeader>
@@ -647,7 +807,6 @@ const DcReceiptReceived = () => {
                       sum + (parseFloat(row.amount) || 0) * row.quantity,
                     0,
                   );
-                  // Determine if this is the last checked box to avoid a trailing blank page when printing
                   const checkedBoxesArray = sortedBoxes.filter((b) =>
                     checkedBoxes.has(b),
                   );
@@ -758,23 +917,7 @@ const DcReceiptReceived = () => {
                               Box (Total Pcs: {boxData.totalPcs})
                             </h3>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold">
-                              Total Amount: ₹{totalAmount.toFixed(2)}
-                            </span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                navigate(
-                                  `/order-received/edit-order-received/${id}`,
-                                )
-                              }
-                              className="h-8 w-8 p-0 print-hidden-custom"
-                            >
-                              <BarcodeIcon className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <div className="flex items-center gap-2">{box}</div>
                         </div>
                         <table className="w-full border-collapse border border-black text-sm">
                           <thead>
@@ -813,10 +956,6 @@ const DcReceiptReceived = () => {
                           </tbody>
                         </table>
                       </div>
-                      {/* Page break element - only in print, between boxes */}
-                      {/* {isChecked && !isLastChecked && (
-                        <div className="print-page-break" />
-                      )} */}
                     </React.Fragment>
                   );
                 })}

@@ -1,4 +1,3 @@
-
 import DisableInspect from "./components/DisableRightClick/DisableRightClick";
 import ErrorBoundry from "./components/errorBoundry/ErrorBoundry";
 import LoadingBar from "./components/loadingBar/LoadingBar";
@@ -12,10 +11,10 @@ function App() {
     <>
       <Toaster />
       {/* <DisableInspect/> */}
-      <Suspense fallback={<LoadingBar/>}>
-      <ErrorBoundry>
-      <AppRoutes/>
-      </ErrorBoundry>
+      <Suspense fallback={<LoadingBar />}>
+        <ErrorBoundry>
+          <AppRoutes />
+        </ErrorBoundry>
       </Suspense>
     </>
   );
