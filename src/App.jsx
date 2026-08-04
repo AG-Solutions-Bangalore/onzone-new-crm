@@ -5,10 +5,11 @@ import { Toaster } from "./components/ui/toaster";
 
 import AppRoutes from "./routes/AppRoutes";
 import { Suspense } from "react";
+import { ConfirmProvider } from "./hooks/useConfirm";
 
 function App() {
   return (
-    <>
+    <ConfirmProvider>
       <Toaster />
       {/* <DisableInspect/> */}
       <Suspense fallback={<LoadingBar />}>
@@ -16,7 +17,7 @@ function App() {
           <AppRoutes />
         </ErrorBoundry>
       </Suspense>
-    </>
+    </ConfirmProvider>
   );
 }
 

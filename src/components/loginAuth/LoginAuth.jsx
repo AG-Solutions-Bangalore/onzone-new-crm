@@ -68,7 +68,13 @@ export default function LoginAuth() {
 
         if (!res.data.UserInfo || !res.data.UserInfo.token) {
           console.warn("⚠️ Login failed: Token missing in response");
-          toast.error("Login Failed: No token received.");
+          localStorage.clear();
+          window.dispatchEvent(new Event("auth:logout"));
+          toast({
+            variant: "destructive",
+            title: "Login Failed",
+            description: "No authentication token received.",
+          });
           setIsLoading(false);
           return;
         }
@@ -77,15 +83,15 @@ export default function LoginAuth() {
 
         console.log("Saving user details to local storage...");
         localStorage.setItem("token", UserInfo.token);
-
         localStorage.setItem("id", UserInfo.user.id);
         localStorage.setItem("name", UserInfo.user.name);
         localStorage.setItem("userType", UserInfo.user.user_type_id);
         localStorage.setItem("factory_id", UserInfo.user.factory_id);
-
         localStorage.setItem("email", UserInfo.user.email);
 
-        console.log("✅ Login successful! Redirecting to /home...");
+        window.dispatchEvent(new Event("auth:login"));
+
+        console.log("✅ Login successful! Redirecting...");
         switch (UserInfo.user.user_type_id) {
           case 4:
             navigate("/work-order");
@@ -96,13 +102,22 @@ export default function LoginAuth() {
         }
       } else {
         console.warn("⚠️ Unexpected API response:", res);
-        toast.error("Login Failed: Unexpected response.");
+        localStorage.clear();
+        window.dispatchEvent(new Event("auth:logout"));
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: "Unexpected server response.",
+        });
       }
     } catch (error) {
       console.error(
         "❌ Login Error:",
         error.response?.data || error.response?.data?.message,
       );
+
+      localStorage.clear();
+      window.dispatchEvent(new Event("auth:logout"));
 
       toast({
         variant: "destructive",

@@ -15,16 +15,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Dialog,
   DialogContent,
@@ -55,6 +46,8 @@ const DcReceiptReceived = () => {
   const [currentInputValue, setCurrentInputValue] = useState("");
   const [loadingStates, setLoadingStates] = useState({});
   const [validationStatus, setValidationStatus] = useState(null);
+  const [receiveConfirmOpen, setReceiveConfirmOpen] = useState(false);
+  const [selectedBoxToReceive, setSelectedBoxToReceive] = useState(null);
   const location = useLocation();
 
   const [checkedBoxes, setCheckedBoxes] = useState(new Set());
@@ -80,6 +73,10 @@ const DcReceiptReceived = () => {
   });
 
   const { workOrder = {}, workOrderSub = [] } = data || {};
+
+  const isOrderReceived =
+    orderReceivedStatus?.toLowerCase() === "received" ||
+    workOrder?.work_order_rc_status?.toLowerCase() === "received";
 
 
   // --- Build table rows (aggregated by box, barcode, size, rate) ---
@@ -383,6 +380,68 @@ const DcReceiptReceived = () => {
     }
   };
 
+  const updateBoxStatusMutation = useMutation({
+    mutationFn: async (boxNumber) => {
+      const token = localStorage.getItem("token");
+      const workOrderRcRef = workOrder?.work_order_rc_ref || id;
+      const payload = {
+        box: boxNumber,
+        work_order_rc_ref: workOrderRcRef,
+      };
+
+      console.log("==========================================");
+      console.log("📦 [UPDATE BOX RECEIVED STATUS] Payload to send:");
+      console.log("URL:", `${BASE_URL}/api/update-work-orders-received-status-box`);
+      console.log("Headers:", { Authorization: `Bearer ${token}` });
+      console.log("Body JSON:", JSON.stringify(payload, null, 2));
+      console.log("==========================================");
+
+      // Commented out API call until backend permissions are enabled:
+      /*
+      const response = await axios.put(
+        `${BASE_URL}/api/update-work-orders-received-status-box`,
+        payload,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      return response.data;
+      */
+
+      // Return mock response for testing payload
+      return {
+        msg: `[Mock Success] Payload for Box ${boxNumber} logged to console!`,
+        payload,
+      };
+    },
+    onSuccess: (data) => {
+      setReceiveConfirmOpen(false);
+      setSelectedBoxToReceive(null);
+      toast({
+        title: "Payload Logged (API Commented)",
+        description: `Box: ${data?.payload?.box}, Ref: ${data?.payload?.work_order_rc_ref}`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.response?.data?.message || "Error updating box received status",
+      });
+    },
+  });
+
+  const handleReceiveBoxClick = (boxNumber) => {
+    setSelectedBoxToReceive(boxNumber);
+    setReceiveConfirmOpen(true);
+  };
+
+  const confirmReceiveBox = () => {
+    if (selectedBoxToReceive) {
+      updateBoxStatusMutation.mutate(selectedBoxToReceive);
+    }
+  };
+
   const openBarcodeDialog = (boxNumber, boxData) => {
     setSelectedBox({
       boxNumber,
@@ -640,7 +699,7 @@ const DcReceiptReceived = () => {
                 Dc Receipt
               </CardTitle>
               <div className="flex items-center gap-2">
-                {orderReceivedStatus?.toLowerCase() !== "received" && (
+                {!isOrderReceived && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -813,6 +872,18 @@ const DcReceiptReceived = () => {
                   const isLastChecked =
                     checkedBoxesArray[checkedBoxesArray.length - 1] === box;
 
+                  const boxSubItems = workOrderSub.filter(
+                    (item) => String(item.work_order_rc_sub_box || "1") === String(box),
+                  );
+                  const isBoxReceived =
+                    boxSubItems.length > 0 &&
+                    boxSubItems.every(
+                      (item) =>
+                        item.work_order_rc_sub_status?.toLowerCase() === "received" ||
+                        item.status?.toLowerCase() === "received" ||
+                        item.work_order_rc_status?.toLowerCase() === "received",
+                    );
+
                   return (
                     <React.Fragment key={`box-frag-${box}`}>
                       <div
@@ -910,14 +981,32 @@ const DcReceiptReceived = () => {
                                 type="checkbox"
                                 checked={isChecked}
                                 onChange={() => toggleBox(box)}
-                                className="w-4 h-4"
+                                className="w-4 h-4 cursor-pointer"
                               />
                             </div>
                             <h3 className="text-lg font-semibold">
                               Box (Total Pcs: {boxData.totalPcs})
                             </h3>
                           </div>
-                          <div className="flex items-center gap-2">{box}</div>
+                          <div className="flex items-center gap-3">
+                            <div className="print-hidden-custom">
+                              {isBoxReceived ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300">
+                                  <CheckCircle className="h-3.5 w-3.5" />
+                                  Received
+                                </span>
+                              ) : !isOrderReceived ? (
+                                <Button
+                                  size="sm"
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-3 h-8 shadow-sm transition-colors cursor-pointer"
+                                  onClick={() => handleReceiveBoxClick(box)}
+                                >
+                                  Received
+                                </Button>
+                              ) : null}
+                            </div>
+                            <span className="font-semibold text-sm">{box}</span>
+                          </div>
                         </div>
                         <table className="w-full border-collapse border border-black text-sm">
                           <thead>
@@ -1226,51 +1315,29 @@ const DcReceiptReceived = () => {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to close this{" "}
-              <span className="text-red-500">DC Receipt</span> and mark all
-              materials as received?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteConfirmOpen(false)}>
-              No
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmCloseWorkOrder}
-              className={`${ButtonConfig.backgroundColor} ${ButtonConfig.textColor} text-black hover:bg-red-600`}
-              disabled={updateMutation.isPending}
-            >
-              {updateMutation.isPending ? (
-                <div className="flex items-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Processing...
-                </div>
-              ) : (
-                "Yes"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Close DC Receipt Order?"
+        description="Are you sure you want to close this DC Receipt and mark all materials as received?"
+        variant="warning"
+        confirmText="Yes, Close Order"
+        cancelText="No"
+        onConfirm={confirmCloseWorkOrder}
+        isLoading={updateMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={receiveConfirmOpen}
+        onOpenChange={setReceiveConfirmOpen}
+        title={`Mark Box ${selectedBoxToReceive} as Received?`}
+        description={`Are you sure you want to mark Box ${selectedBoxToReceive} as received?`}
+        variant="success"
+        confirmText="Yes, Mark Received"
+        cancelText="Cancel"
+        onConfirm={confirmReceiveBox}
+        isLoading={updateBoxStatusMutation.isPending}
+      />
     </Page>
   );
 };

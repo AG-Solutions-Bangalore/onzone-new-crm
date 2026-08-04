@@ -4,22 +4,45 @@ const useAuth = () => {
   const [authData, setAuthData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  const checkAuth = () => {
     const token = localStorage.getItem("token");
-    const userData = {
-      id: localStorage.getItem("id"),
-      name: localStorage.getItem("name"),
-      userType: localStorage.getItem("userType"),
-      email: localStorage.getItem("email"),
-    };
+    const id = localStorage.getItem("id");
+    const name = localStorage.getItem("name");
+    const userType = localStorage.getItem("userType");
+    const email = localStorage.getItem("email");
 
-    if (token) {
-      setAuthData({ user: userData });
+    const isValidToken = token && token.trim() !== "" && token !== "null" && token !== "undefined";
+    const isValidUser = id && id !== "null" && id !== "undefined";
+
+    if (isValidToken && isValidUser) {
+      setAuthData({
+        user: {
+          id,
+          name,
+          userType,
+          email,
+          token,
+        },
+      });
     } else {
       setAuthData({ user: null });
     }
-
     setIsLoading(false);
+  };
+
+  useEffect(() => {
+    checkAuth();
+
+    const handleAuthEvent = () => checkAuth();
+    window.addEventListener("auth:logout", handleAuthEvent);
+    window.addEventListener("auth:login", handleAuthEvent);
+    window.addEventListener("storage", handleAuthEvent);
+
+    return () => {
+      window.removeEventListener("auth:logout", handleAuthEvent);
+      window.removeEventListener("auth:login", handleAuthEvent);
+      window.removeEventListener("storage", handleAuthEvent);
+    };
   }, []);
 
   return { data: authData, isLoading };
