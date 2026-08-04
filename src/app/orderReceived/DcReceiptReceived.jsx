@@ -389,15 +389,6 @@ const DcReceiptReceived = () => {
         work_order_rc_ref: workOrderRcRef,
       };
 
-      console.log("==========================================");
-      console.log("📦 [UPDATE BOX RECEIVED STATUS] Payload to send:");
-      console.log("URL:", `${BASE_URL}/api/update-work-orders-received-status-box`);
-      console.log("Headers:", { Authorization: `Bearer ${token}` });
-      console.log("Body JSON:", JSON.stringify(payload, null, 2));
-      console.log("==========================================");
-
-      // Commented out API call until backend permissions are enabled:
-      /*
       const response = await axios.put(
         `${BASE_URL}/api/update-work-orders-received-status-box`,
         payload,
@@ -406,23 +397,19 @@ const DcReceiptReceived = () => {
         },
       );
       return response.data;
-      */
-
-      // Return mock response for testing payload
-      return {
-        msg: `[Mock Success] Payload for Box ${boxNumber} logged to console!`,
-        payload,
-      };
     },
     onSuccess: (data) => {
       setReceiveConfirmOpen(false);
       setSelectedBoxToReceive(null);
       toast({
-        title: "Payload Logged (API Commented)",
-        description: `Box: ${data?.payload?.box}, Ref: ${data?.payload?.work_order_rc_ref}`,
+        title: "Success",
+        description: data?.message || data?.msg || "Box status updated successfully",
       });
+      refetch();
     },
     onError: (error) => {
+      setReceiveConfirmOpen(false);
+      setSelectedBoxToReceive(null);
       toast({
         variant: "destructive",
         title: "Error",
@@ -997,11 +984,13 @@ const DcReceiptReceived = () => {
                                 </span>
                               ) : !isOrderReceived ? (
                                 <Button
+                                  variant="outline"
                                   size="sm"
-                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-3 h-8 shadow-sm transition-colors cursor-pointer"
                                   onClick={() => handleReceiveBoxClick(box)}
                                 >
-                                  Received
+                                  <div className="flex items-center gap-2 cursor-pointer">
+                                    Received
+                                  </div>
                                 </Button>
                               ) : null}
                             </div>
