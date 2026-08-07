@@ -110,6 +110,18 @@ const ReceivedReport = lazy(
   () => import("@/app/report/received/ReceivedReport"),
 );
 const SalesReport = lazy(() => import("@/app/report/sales/SalesReport"));
+const FairOrderFormList = lazy(
+  () => import("@/app/fair-order-form/FairOrderFormList")
+);
+const CreateFairOrderForm = lazy(
+  () => import("@/app/fair-order-form/CreateFairOrderForm")
+);
+const EditFairOrderForm = lazy(
+  () => import("@/app/fair-order-form/EditFairOrderForm")
+);
+const FairOrderFormView = lazy(
+  () => import("@/app/fair-order-form/FairOrderFormView")
+);
 const NotFound = lazy(() => import("@/app/errors/NotFound"));
 
 function AppRoutes() {
@@ -209,7 +221,7 @@ function AppRoutes() {
         <Route path="/sales/view-sales/:id" element={<ViewSales />} />
         <Route path="/sales/edit-sales/:id" element={<EditSales />} />
 
-        {/* order form  */}
+        {/* order form (old) */}
         <Route path="/order-form" element={<OrderFormList />} />
         <Route
           path="/order-form/create-order-form"
@@ -222,6 +234,21 @@ function AppRoutes() {
         <Route
           path="/order-form/view-edit-form/:id"
           element={<EditOrderForm />}
+        />
+
+        {/* new order form (fair order form) */}
+        <Route path="/fair-order-form" element={<FairOrderFormList />} />
+        <Route
+          path="/fair-order-form/create"
+          element={<CreateFairOrderForm />}
+        />
+        <Route
+          path="/fair-order-form/edit/:id"
+          element={<EditFairOrderForm />}
+        />
+        <Route
+          path="/fair-order-form/view/:id"
+          element={<FairOrderFormView />}
         />
 
         {/* stock  */}

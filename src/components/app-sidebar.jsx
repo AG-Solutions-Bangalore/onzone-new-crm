@@ -127,8 +127,14 @@ export function AppSidebar({ ...props }) {
         isActive: false,
       },
       {
-        title: "Order Form",
+        title: "Order Form ( Old )",
         url: "/order-form",
+        icon: NotebookText,
+        isActive: false,
+      },
+      {
+        title: "Order Form",
+        url: "/fair-order-form",
         icon: NotebookText,
         isActive: false,
       },
