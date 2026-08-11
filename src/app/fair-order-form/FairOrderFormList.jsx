@@ -139,6 +139,14 @@ const FairOrderFormList = () => {
       },
     },
     {
+      accessorKey: "fair_order_delivery_date",
+      header: "Delivery Date",
+      cell: ({ row }) => {
+        const val = row.original.fair_order_delivery_date;
+        return val ? moment(val).format("DD-MMM-YYYY") : "-";
+      },
+    },
+    {
       accessorKey: "fair_order_retailer",
       header: "Retailer",
       cell: ({ row }) => row.getValue("fair_order_retailer") || "-",
