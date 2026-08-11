@@ -74,6 +74,7 @@ const CreateFairOrderForm = () => {
     fair_order_retailer: "",
     fair_order_gst_no: "",
     fair_order_retailer_mobile: "",
+    fair_order_delivery_date: "",
     fair_order_remarks: "",
   });
 
@@ -441,6 +442,7 @@ const CreateFairOrderForm = () => {
       fair_order_retailer: formData.fair_order_retailer,
       fair_order_gst_no: formData.fair_order_gst_no,
       fair_order_retailer_mobile: formData.fair_order_retailer_mobile,
+      fair_order_delivery_date: formData.fair_order_delivery_date,
       fair_order_remarks: formData.fair_order_remarks,
       subs: subItems.map((item) => ({
         fair_order_sub_barcode_main: String(
@@ -503,7 +505,7 @@ const CreateFairOrderForm = () => {
                 Retailer & Order Details
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="retailer">Retailer Name *</Label>
                 {retailerOptions.length > 0 ? (
@@ -559,7 +561,22 @@ const CreateFairOrderForm = () => {
                 />
               </div>
 
-              <div className="space-y-2 md:col-span-3">
+              <div className="space-y-2">
+                <Label htmlFor="delivery_date">Delivery Date</Label>
+                <Input
+                  id="delivery_date"
+                  type="date"
+                  value={formData.fair_order_delivery_date}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      fair_order_delivery_date: e.target.value,
+                    })
+                  }
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-4">
                 <Label htmlFor="remarks">Remarks</Label>
                 <Textarea
                   id="remarks"

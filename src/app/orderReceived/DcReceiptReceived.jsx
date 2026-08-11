@@ -663,6 +663,17 @@ const DcReceiptReceived = () => {
     });
   };
 
+  const isAllChecked =
+    sortedBoxes.length > 0 && sortedBoxes.every((box) => checkedBoxes.has(box));
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setCheckedBoxes(new Set(sortedBoxes));
+    } else {
+      setCheckedBoxes(new Set());
+    }
+  };
+
   if (isLoading) {
     return <LoaderComponent name="Work Order Dc Receipt Data" />;
   }
@@ -686,6 +697,18 @@ const DcReceiptReceived = () => {
                 Dc Receipt
               </CardTitle>
               <div className="flex items-center gap-2">
+                {sortedBoxes.length > 0 && (
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none border rounded-md px-2.5 py-1 hover:bg-gray-50 transition-colors print-hidden-custom">
+                    <input
+                      type="checkbox"
+                      checked={isAllChecked}
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 cursor-pointer accent-primary"
+                    />
+                    <span>Select All</span>
+                  </label>
+                )}
+
                 {!isOrderReceived && (
                   <Button
                     variant="outline"
